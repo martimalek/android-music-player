@@ -8,15 +8,14 @@ import {
     View,
 } from 'react-native';
 
-import {
-    Header,
-    Colors,
-} from 'react-native/Libraries/NewAppScreen';
+import { Header, Colors } from 'react-native/Libraries/NewAppScreen';
+import AudioManager from './services/AudioManager';
 
 const App = () => {
 
     useEffect(() => {
         getSongs();
+        console.log('MANAGER', AudioManager);
     }, []);
 
     const getSongs = async () => {
