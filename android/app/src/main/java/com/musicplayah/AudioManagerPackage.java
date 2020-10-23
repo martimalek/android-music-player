@@ -1,5 +1,7 @@
 package com.musicplayah;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.facebook.react.ReactPackage;
@@ -10,6 +12,8 @@ import com.facebook.react.uimanager.ViewManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import com.musicplayah.Utils;
 
 public class AudioManagerPackage implements ReactPackage  {
     @NonNull
@@ -22,9 +26,9 @@ public class AudioManagerPackage implements ReactPackage  {
     @Override
     public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
-
         modules.add(new AudioManager(reactContext));
 
+        Log.d(Utils.TAG, "Adding modules! " + modules.size());
         return modules;
     }
 }

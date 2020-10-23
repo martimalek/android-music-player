@@ -8,53 +8,59 @@ import android.os.Build;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableNativeArray;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class AudioManager extends ReactContextBaseJavaModule  {
     private static ReactApplicationContext reactContext;
-    private static String TAG = "MUSIC_PLAYAH_TAG";
-
-    private static final String DURATION_SHORT_KEY = "SHORT";
-    private static final String DURATION_LONG_KEY = "LONG";
+    private static String TAG = Utils.TAG;
 
     private MediaPlayer mp;
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     AudioManager(ReactApplicationContext context) {
         super(context);
         reactContext = context;
 
         Log.d(TAG, "Inside constructor");
+    }
 
-        String path = "/storage/emulated/0/Music/";
-
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private List<Audio> getAudioList() {
         String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
 
         String[] projection = {
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DISPLAY_NAME,
+            MediaStore.Audio.Media.DURATION,
         };
 
-        Cursor audioCursor = context.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                null,
-                MediaStore.Audio.Media.DISPLAY_NAME + " ASC");
+        Cursor audioCursor = reactContext.getContentResolver().query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            null,
+            MediaStore.Audio.Media.TITLE + " ASC");
 
         Log.d(TAG, "Cursor created");
+
+        List<Audio> audios = new ArrayList<>();
 
         try {
             if (audioCursor != null && audioCursor.moveToFirst()) {
@@ -67,7 +73,6 @@ public class AudioManager extends ReactContextBaseJavaModule  {
                 int displayNameColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME);
                 int durationColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
 
-                List<Audio> audios = new ArrayList<>();
                 do {
                     Audio audio = new Audio(
                         audioCursor.getInt(idColumn),
@@ -81,31 +86,27 @@ public class AudioManager extends ReactContextBaseJavaModule  {
                     Log.d(TAG, audio.title);
                 } while (audioCursor.moveToNext());
 
-//                Log.d(TAG, audios.toString());
                 Log.d(TAG, "Size: " + String.valueOf(audios.size()));
 
-                playAudio(audios.get(0).data);
+//                playAudio(audios.get(0).data);
             }
         } catch (Exception e) {
             Log.d(TAG, "Exception occurred " + e.getMessage());
         }
+        return audios;
     }
 
+    @NonNull
     @Override
     public String getName() {
         return "AudioManager";
     }
 
-    @Override
-    public Map<String, Object> getConstants() {
-        final Map<String, Object> constants = new HashMap<>();
-        constants.put(DURATION_SHORT_KEY, 1);
-        constants.put(DURATION_LONG_KEY, 2);
-        return constants;
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @ReactMethod
     public void playAudio(String path){
+        if (mp != null) mp.stop();
+
         mp = new MediaPlayer();
 
         try {
@@ -126,7 +127,31 @@ public class AudioManager extends ReactContextBaseJavaModule  {
     }
 
     @ReactMethod
-    public void show(String message, int duration) {
-        Log.d(TAG, "Whatever");
+    public void play() {
+        if (mp != null) mp.start();
+    }
+
+    @ReactMethod
+    public void stop() {
+        if (mp != null) mp.stop();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    @ReactMethod
+    public void getAudios(Promise promise) {
+        WritableArray audioArray = new WritableNativeArray();
+
+        List<Audio> audios = getAudioList();
+
+        try {
+            for (Audio audio: audios) {
+                audioArray.pushMap(audio.toMap());
+            }
+
+            promise.resolve(audioArray);
+        } catch (Exception e) {
+            promise.reject("E_AUDIO", "Could not get audios");
+            Log.d(TAG, "Exception while parsing " + e.getMessage());
+        }
     }
 }

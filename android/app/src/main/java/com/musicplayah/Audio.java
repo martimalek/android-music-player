@@ -1,5 +1,8 @@
 package com.musicplayah;
 
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
+
 public class Audio {
     public int id;
     public String artist;
@@ -15,5 +18,18 @@ public class Audio {
         this.data = data;
         this.displayName = displayName;
         this.duration = duration;
+    }
+
+    public WritableMap toMap() {
+        WritableMap map = new WritableNativeMap();
+
+        map.putInt("id", this.id);
+        map.putString("artist", this.artist);
+        map.putString("title", this.title);
+        map.putString("data", this.data);
+        map.putString("displayName", this.displayName);
+        map.putInt("duration", this.duration);
+
+        return map;
     }
 }
