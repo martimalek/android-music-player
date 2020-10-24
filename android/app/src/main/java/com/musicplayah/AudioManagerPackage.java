@@ -28,7 +28,7 @@ public class AudioManagerPackage implements ReactPackage  {
         List<NativeModule> modules = new ArrayList<>();
         modules.add(new AudioManager(reactContext));
 
-        Log.d(Utils.TAG, "Adding modules! " + modules.size());
+        Log.d(Constants.TAG, "Adding modules! " + modules.size());
         return modules;
     }
 }

@@ -20,6 +20,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         padding: 10,
+        color: 'white',
     },
     container: {
         flex: 1,

@@ -1,6 +1,10 @@
 import { NativeModules } from 'react-native';
 
 class AudioManager {
+    static async init() {
+        return NativeModules.AudioManager.init();
+    }
+
     static async getAudios() {
         return NativeModules.AudioManager.getAudios();
     }
@@ -13,8 +17,8 @@ class AudioManager {
         NativeModules.AudioManager.play();
     }
 
-    static stop() {
-        NativeModules.AudioManager.stop();
+    static pause() {
+        NativeModules.AudioManager.pause();
     }
 }
 

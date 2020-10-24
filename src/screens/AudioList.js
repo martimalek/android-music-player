@@ -9,8 +9,13 @@ export const AudioList = () => {
     const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
-        getSongs();
+        init();
     }, []);
+
+    const init = async () => {
+        const isInitialized = await AudioManager.init();
+        if (isInitialized) getSongs();
+    };
 
     const getSongs = async () => setSongs(await AudioManager.getAudios());
 
@@ -31,7 +36,7 @@ export const AudioList = () => {
 
     const handleSongToggle = () => {
         if (isPlaying) {
-            AudioManager.stop();
+            AudioManager.pause();
             setIsPlaying(false);
         } else {
             if (selectedSong) AudioManager.play();

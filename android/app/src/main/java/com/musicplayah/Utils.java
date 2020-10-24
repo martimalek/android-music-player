@@ -12,8 +12,6 @@ import org.json.JSONObject;
 import java.util.Iterator;
 
 public class Utils {
-    public static String TAG = "MUSIC_PLAYAH_TAG";
-
     public static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {
         WritableMap map = new WritableNativeMap();
 
