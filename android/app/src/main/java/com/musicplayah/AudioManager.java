@@ -29,17 +29,19 @@ import java.util.List;
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
 import static com.musicplayah.Constants.permissions;
 
-public class AudioManager extends ReactContextBaseJavaModule implements PermissionListener {
+public class AudioManager extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
     private static String TAG = Constants.TAG;
 
     private MediaPlayer mp;
 
-    private Promise permsPromise;
+    private PermissionManager permissionManager;
 
     AudioManager(ReactApplicationContext context) {
         super(context);
         reactContext = context;
+
+        permissionManager = new PermissionManager();
 
         Log.d(TAG, "Inside constructor");
     }
@@ -93,8 +95,6 @@ public class AudioManager extends ReactContextBaseJavaModule implements Permissi
                 } while (audioCursor.moveToNext());
 
                 Log.d(TAG, "Size: " + String.valueOf(audios.size()));
-
-//                playAudio(audios.get(0).data);
             }
         } catch (Exception e) {
             Log.d(TAG, "Exception occurred " + e.getMessage());
@@ -138,7 +138,7 @@ public class AudioManager extends ReactContextBaseJavaModule implements Permissi
             Activity currentActivity = reactContext.getCurrentActivity();
             if (currentActivity != null) {
                 PermissionAwareActivity activity = (PermissionAwareActivity) currentActivity;
-                activity.requestPermissions(permissions, PERMS_REQUEST_CODE, this);
+                activity.requestPermissions(permissions, PERMS_REQUEST_CODE, this.permissionManager);
             }
         } else Log.d(TAG, "Permissions already granted!");
     }
@@ -174,17 +174,7 @@ public class AudioManager extends ReactContextBaseJavaModule implements Permissi
 
     @ReactMethod
     public void init(Promise promise) {
-        permsPromise = promise;
+        permissionManager.permsGrantedPromise = promise;
         grantPermissions();
     };
-
-    @Override
-    public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == PERMS_REQUEST_CODE) {
-            permsPromise.resolve(true);
-            return grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-        }
-        permsPromise.reject("E_PERMS", "Permission not accepted");
-        return false;
-    }
 }
