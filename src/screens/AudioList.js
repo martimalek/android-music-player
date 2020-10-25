@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Dimensions, FlatList, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AudioManager from '../services/AudioManager';
 
@@ -46,7 +47,8 @@ export const AudioList = () => {
     };
 
     return (
-        <>
+        <SafeAreaView style={styles.container}>
+            <Text style={styles.title}>MUSIC</Text>
             <FlatList
                 data={songs}
                 renderItem={renderItem}
@@ -55,7 +57,7 @@ export const AudioList = () => {
             <Pressable style={styles.fab} onPress={handleSongToggle}>
                 <Text style={styles.itemText}>{isPlaying ? 'STOP' : 'PLAY'}</Text>
             </Pressable>
-        </>
+        </SafeAreaView>
     );
 };
 
@@ -92,5 +94,16 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 20,
         transform: [{ translateY: 19 }],
+    },
+    title: {
+        fontSize: 20,
+        padding: 10,
+        color: 'white',
+    },
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: '#100B2E',
     },
 });
