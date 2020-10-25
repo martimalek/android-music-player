@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Dimensions, FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DeviceEventEmitter, Dimensions, FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PauseIcon, PlayIcon } from '../assets/icons';
 
 import AudioManager from '../services/AudioManager';
 
@@ -11,7 +12,17 @@ export const AudioList = () => {
 
     useEffect(() => {
         init();
+        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_END, handleAudioEnd);
+
+        return () => {
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_END);
+        }
     }, []);
+
+    const handleAudioEnd = () => {
+        if (selectedSong !== songs.length - 1) AudioManager.playSpecific(songs[selectedSong + 1].data);
+        else AudioManager.playSpecific(songs[0].data);
+    };
 
     const init = async () => {
         const isInitialized = await AudioManager.init();
@@ -54,9 +65,13 @@ export const AudioList = () => {
                 renderItem={renderItem}
                 keyExtractor={({ id }) => `song-${id}`}
             />
-            <Pressable style={styles.fab} onPress={handleSongToggle}>
-                <Text style={styles.itemText}>{isPlaying ? 'STOP' : 'PLAY'}</Text>
-            </Pressable>
+            <TouchableOpacity activeOpacity={0.8} style={styles.fab} onPress={handleSongToggle}>
+                {isPlaying ? (
+                    <PauseIcon fill="white" />
+                ) : (
+                        <PlayIcon fill="white" />
+                    )}
+            </TouchableOpacity>
         </SafeAreaView>
     );
 };
@@ -77,11 +92,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     fab: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         position: 'absolute',
         width: 80,
         height: 80,
-        alignItems: 'center',
-        justifyContent: 'center',
         right: (Dimensions.get('window').width / 2) - 40,
         bottom: 30,
         borderRadius: 50,
