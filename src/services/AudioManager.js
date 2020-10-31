@@ -21,8 +21,11 @@ class AudioManager {
         NativeModules.AudioManager.pause();
     }
 
-    static ON_AUDIO_END = NativeModules.AudioManager.ON_AUDIO_END;
+    static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
+    static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
 }
+
+console.log(NativeModules.AudioManager)
 
 export default AudioManager;
 
