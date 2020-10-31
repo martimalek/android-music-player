@@ -22,7 +22,6 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
-import com.facebook.react.modules.core.PermissionListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,7 +93,6 @@ public class AudioManager extends ReactContextBaseJavaModule {
                         audioCursor.getInt(durationColumn)
                     );
                     audios.add(audio);
-                    Log.d(TAG, audio.title);
                 } while (audioCursor.moveToNext());
 
                 Log.d(TAG, "Size: " + String.valueOf(audios.size()));
@@ -131,9 +129,9 @@ public class AudioManager extends ReactContextBaseJavaModule {
             mp.start();
 
             mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-
                 @Override
                 public void onCompletion(MediaPlayer mp) {
+                    Log.d(TAG, "Audio ended");
                     reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_ENDED_EVENT, true);
                 }
             });
@@ -192,7 +190,7 @@ public class AudioManager extends ReactContextBaseJavaModule {
     @Override
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
-        constants.put("x", Constants.AUDIO_ENDED_EVENT);
+        constants.put("ON_AUDIO_END", Constants.AUDIO_ENDED_EVENT);
         return constants;
     }
 }

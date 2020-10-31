@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { DeviceEventEmitter, Dimensions, FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DeviceEventEmitter, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PauseIcon, PlayIcon } from '../assets/icons';
+
+import { AudioControls } from '../components/AudioControls';
 
 import AudioManager from '../services/AudioManager';
 
 export const AudioList = () => {
     const [songs, setSongs] = useState([]);
-    const [selectedSong, setSelectedSong] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [hasAudioEnded, setHasAudioEnded] = useState(false);
+    const [selectedSong, setSelectedSong] = useState(null);
 
     useEffect(() => {
         init();
@@ -19,9 +22,20 @@ export const AudioList = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (hasAudioEnded) handleNext()
+    }, [hasAudioEnded]);
+
     const handleAudioEnd = () => {
-        if (selectedSong !== songs.length - 1) AudioManager.playSpecific(songs[selectedSong + 1].data);
-        else AudioManager.playSpecific(songs[0].data);
+        setIsPlaying(false);
+        setHasAudioEnded(true);
+    };
+
+    const playSong = (index) => {
+        if (hasAudioEnded) setHasAudioEnded(false);
+        setSelectedSong(index);
+        setIsPlaying(true);
+        AudioManager.playSpecific(songs[index].data);
     };
 
     const init = async () => {
@@ -31,18 +45,9 @@ export const AudioList = () => {
 
     const getSongs = async () => setSongs(await AudioManager.getAudios());
 
-    const handlePress = (index) => {
-        setIsPlaying(true);
-        setSelectedSong(index);
-        AudioManager.playSpecific(songs[index].data);
-    };
-
     const renderItem = ({ item: { title }, index }) => (
-        <TouchableOpacity style={styles.item} onPress={() => handlePress(index)}>
+        <TouchableOpacity style={{ ...styles.item, ...(index === selectedSong ? styles.selected : {}) }} onPress={() => playSong(index)}>
             <Text style={styles.itemText}>{title}</Text>
-            {selectedSong === index && (
-                <View style={styles.selected} />
-            )}
         </TouchableOpacity>
     );
 
@@ -57,6 +62,16 @@ export const AudioList = () => {
         }
     };
 
+    const handleNext = () => {
+        if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);
+        else playSong(0);
+    };
+
+    const handlePrev = () => {
+        if (selectedSong === 0) playSong(songs.length - 1);
+        else playSong(selectedSong - 1);
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.title}>MUSIC</Text>
@@ -65,13 +80,15 @@ export const AudioList = () => {
                 renderItem={renderItem}
                 keyExtractor={({ id }) => `song-${id}`}
             />
-            <TouchableOpacity activeOpacity={0.8} style={styles.fab} onPress={handleSongToggle}>
-                {isPlaying ? (
-                    <PauseIcon fill="white" />
-                ) : (
-                        <PlayIcon fill="white" />
-                    )}
-            </TouchableOpacity>
+            {(selectedSong !== null) && (
+                <AudioControls
+                    isPlaying={isPlaying}
+                    duration={songs[selectedSong].duration}
+                    onToggle={handleSongToggle}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -105,11 +122,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#7092ff',
     },
     selected: {
-        height: 2,
-        width: '96%',
-        backgroundColor: 'white',
-        borderRadius: 20,
-        transform: [{ translateY: 19 }],
+        backgroundColor: '#94adff',
     },
     title: {
         fontSize: 20,
