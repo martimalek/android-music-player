@@ -20,11 +20,13 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableNativeArray;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
-import com.facebook.react.modules.core.PermissionListener;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
 import static com.musicplayah.Constants.permissions;
@@ -91,7 +93,6 @@ public class AudioManager extends ReactContextBaseJavaModule {
                         audioCursor.getInt(durationColumn)
                     );
                     audios.add(audio);
-                    Log.d(TAG, audio.title);
                 } while (audioCursor.moveToNext());
 
                 Log.d(TAG, "Size: " + String.valueOf(audios.size()));
@@ -126,6 +127,14 @@ public class AudioManager extends ReactContextBaseJavaModule {
             mp.setDataSource(getReactApplicationContext(), audioUri);
             mp.prepare();
             mp.start();
+
+            mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    Log.d(TAG, "Audio ended");
+                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_ENDED_EVENT, true);
+                }
+            });
         } catch (Exception e) {
             Log.d(TAG, "Exception while trying to play " + e.getMessage());
             e.printStackTrace();
@@ -177,4 +186,11 @@ public class AudioManager extends ReactContextBaseJavaModule {
         permissionManager.permsGrantedPromise = promise;
         grantPermissions();
     };
+
+    @Override
+    public Map<String, Object> getConstants() {
+        final Map<String, Object> constants = new HashMap<>();
+        constants.put("ON_AUDIO_END", Constants.AUDIO_ENDED_EVENT);
+        return constants;
+    }
 }
