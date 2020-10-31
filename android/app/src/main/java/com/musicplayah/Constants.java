@@ -9,6 +9,7 @@ public class Constants {
     public static String TAG = "MUSIC_PLAYAH_TAG";
 
     public static String AUDIO_ENDED_EVENT = "ON_AUDIO_ENDED";
+    public static String AUDIO_PAUSED_EVENT = "ON_AUDIO_PAUSED";
 
 }
 

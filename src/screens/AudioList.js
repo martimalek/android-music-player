@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DeviceEventEmitter, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PauseIcon, PlayIcon } from '../assets/icons';
 
 import { AudioControls } from '../components/AudioControls';
 
@@ -15,16 +14,20 @@ export const AudioList = () => {
 
     useEffect(() => {
         init();
-        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_END, handleAudioEnd);
+        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_ENDED, handleAudioEnd);
+        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_PAUSED, handleAudioStopped);
 
         return () => {
-            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_END);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_PAUSED);
         }
     }, []);
 
     useEffect(() => {
         if (hasAudioEnded) handleNext()
     }, [hasAudioEnded]);
+
+    const handleAudioStopped = () => setIsPlaying(false);
 
     const handleAudioEnd = () => {
         setIsPlaying(false);

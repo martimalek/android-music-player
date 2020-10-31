@@ -2,6 +2,7 @@ package com.musicplayah;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.AudioAttributes;
@@ -39,11 +40,22 @@ public class AudioManager extends ReactContextBaseJavaModule {
 
     private PermissionManager permissionManager;
 
+    private BroadcastReceiver becomingNoisyReceiver;
+
+    private boolean isNoisyReceiverRegistered = false;
+
     AudioManager(ReactApplicationContext context) {
         super(context);
         reactContext = context;
 
         permissionManager = new PermissionManager();
+
+        becomingNoisyReceiver = new BecomingNoisyReceiver(new Runnable() {
+            @Override
+            public void run() {
+                pause();
+            }
+        });
 
         Log.d(TAG, "Inside constructor");
     }
@@ -109,12 +121,25 @@ public class AudioManager extends ReactContextBaseJavaModule {
         return "AudioManager";
     }
 
+    private void registerNoisyReceiver() {
+        if (!isNoisyReceiverRegistered) {
+            getReactApplicationContext().registerReceiver(becomingNoisyReceiver, BecomingNoisyReceiver.intentFilter);
+            isNoisyReceiverRegistered = true;
+        }
+    }
+
+    private void unRegisterNoisyReceiver() {
+        getReactApplicationContext().unregisterReceiver(becomingNoisyReceiver);
+        isNoisyReceiverRegistered = false;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @ReactMethod
     public void playAudio(String path){
         if (mp != null) mp.stop();
-
         mp = new MediaPlayer();
+
+        registerNoisyReceiver();
 
         try {
             Uri audioUri = Uri.parse("file:///" + path);;
@@ -152,14 +177,23 @@ public class AudioManager extends ReactContextBaseJavaModule {
         } else Log.d(TAG, "Permissions already granted!");
     }
 
+    public void stop() {
+        if (mp != null) mp.stop();
+        unRegisterNoisyReceiver();
+    }
+
     @ReactMethod
     public void play() {
-        if (mp != null) mp.start();
+        if (mp != null) {
+            mp.start();
+            registerNoisyReceiver();
+        }
     }
 
     @ReactMethod
     public void pause() {
         if (mp != null) mp.pause();
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -190,7 +224,8 @@ public class AudioManager extends ReactContextBaseJavaModule {
     @Override
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
-        constants.put("ON_AUDIO_END", Constants.AUDIO_ENDED_EVENT);
+        constants.put(Constants.AUDIO_ENDED_EVENT, Constants.AUDIO_ENDED_EVENT);
+        constants.put(Constants.AUDIO_PAUSED_EVENT, Constants.AUDIO_PAUSED_EVENT);
         return constants;
     }
 }
