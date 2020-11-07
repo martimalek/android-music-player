@@ -1,6 +1,7 @@
 package com.musicplayah;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -81,10 +82,8 @@ public class MusicProvider {
         return audios;
     }
 
-    /**
-     * Get all songs
-     */
     public ArrayList<MediaBrowserCompat.MediaItem> getAllSongs() {
+        Log.d(TAG, "Getting all songs...");
         final Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         final String _ID = MediaStore.Audio.Media._ID;
@@ -109,17 +108,21 @@ public class MusicProvider {
         try {
             while (tracksCursor.moveToNext()) {
                 String id = tracksCursor.getString(0);
+                long longId = tracksCursor.getLong(0);
                 String title= tracksCursor.getString(1);
                 String artist = tracksCursor.getString(2);
                 String artist_id = tracksCursor.getString(3);
                 String album = tracksCursor.getString(4);
                 Long durationInMs = tracksCursor.getLong(5);
                 Long trackNo = tracksCursor.getLong(6);
-                Log.d(TAG, "Track " + id + " artist id= " + artist_id);
+                Uri contentUri = ContentUris.withAppendedId(
+                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI, longId);
+//                Log.d(TAG, "Track " + id + " uri= " + contentUri.toString());
                 MediaDescriptionCompat mediaDescription = new MediaDescriptionCompat.Builder()
                         .setTitle(title)
                         .setSubtitle(artist)
                         .setMediaId(id)
+                        .setMediaUri(contentUri)
                         .build();
 
                 mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
@@ -128,6 +131,8 @@ public class MusicProvider {
         } finally {
             tracksCursor.close();
         }
+
+        Log.d(TAG, "All songs retrieved " + tracks.size());
 
         return tracks;
     }

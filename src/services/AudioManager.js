@@ -21,6 +21,10 @@ class AudioManager {
         NativeModules.AudioManager.pause();
     }
 
+    static toggle() {
+        NativeModules.AudioManager.toggle();
+    }
+
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
     static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
 }

@@ -1,10 +1,8 @@
 package com.musicplayah;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -13,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MediaPlaybackService extends MediaBrowserServiceCompat implements PlaybackManager.PlaybackServiceCallback {
@@ -24,8 +23,9 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     private PlaybackStateCompat.Builder stateBuilder;
 
     private MusicProvider musicProvider;
+    private PlaybackManager playbackManager;
 
-    PlaybackManager playbackManager;
+    public ArrayList<MediaBrowserCompat.MediaItem> tracks; // TODO: Create a QueueManager
 
     public MediaPlaybackService() {
         Log.d(TAG, "MediaPlaybackService constructed!");
@@ -45,11 +45,15 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         mediaSession.setPlaybackState(stateBuilder.build());
         Log.d(TAG, "Inside MediaPlaybackService onCreate");
 
-        playbackManager = new PlaybackManager(this);
+        playbackManager = new PlaybackManager(this, getApplicationContext());
 
         mediaSession.setCallback(playbackManager.getMediaSessionCallback());
 
         setSessionToken(mediaSession.getSessionToken());
+
+        // TODO: Get initial music
+
+        tracks = musicProvider.getAllSongs();
     }
 
     @Nullable

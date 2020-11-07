@@ -4,18 +4,15 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.media.AudioAttributes;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -30,9 +27,7 @@ import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
@@ -51,6 +46,8 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
     private boolean isNoisyReceiverRegistered = false;
 
     private MediaBrowserCompat mediaBrowser;
+
+    private Activity currActivity;
 
     AudioManagerModule(ReactApplicationContext context) {
         super(context);
@@ -116,65 +113,19 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         Activity currentActivity = getCurrentActivity();
 
         if (currentActivity != null) {
+            Log.d(TAG, "There is an Activity");
+
             MediaControllerCompat mediaController = new MediaControllerCompat(reactContext, token);
 
             MediaControllerCompat.setMediaController(currentActivity, mediaController);
+        } else {
+            Log.d(TAG, "There is no Activity");
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    private List<Audio> getAudioList() {
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-
-        String[] projection = {
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DURATION,
-        };
-
-        Cursor audioCursor = reactContext.getContentResolver().query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            null,
-            MediaStore.Audio.Media.TITLE + " ASC");
-
-        Log.d(TAG, "Cursor created");
-
-        List<Audio> audios = new ArrayList<>();
-
-        try {
-            if (audioCursor != null && audioCursor.moveToFirst()) {
-                Log.d(TAG, "Cursor valid " + audioCursor.toString());
-
-                int idColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media._ID);
-                int artistColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-                int titleColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-                int dataColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-                int displayNameColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME);
-                int durationColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
-
-                do {
-                    Audio audio = new Audio(
-                        audioCursor.getInt(idColumn),
-                        audioCursor.getString(artistColumn),
-                        audioCursor.getString(titleColumn),
-                        audioCursor.getString(dataColumn),
-                        audioCursor.getString(displayNameColumn),
-                        audioCursor.getInt(durationColumn)
-                    );
-                    audios.add(audio);
-                } while (audioCursor.moveToNext());
-
-                Log.d(TAG, "Size: " + String.valueOf(audios.size()));
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Exception occurred " + e.getMessage());
-        }
-        return audios;
+    private Activity getActivity() {
+        if (currActivity != null) return currActivity;
+        return getCurrentActivity();
     }
 
     @NonNull
@@ -253,6 +204,18 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void toggle() {
+        Log.d(TAG, "Toggling...");
+
+        Activity activity = getActivity();
+        if (activity != null) {
+            MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(activity);
+            if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) mediaController.getTransportControls().pause();
+            else mediaController.getTransportControls().play();
+        }
+    }
+
+    @ReactMethod
     public void pause() {
         if (mp != null) mp.pause();
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
@@ -279,12 +242,18 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void init(Promise promise) {
-        permissionManager.permsGrantedPromise = promise;
+        permissionManager.permsGrantedPromise = promise; // TODO: Await for perms granted here and Promise.resolve on mediaBrowser.connect
         grantPermissions();
 
-//        Log.d(TAG, "Trying to instance service");
-//
-//        mediaBrowser = new MediaBrowserCompat(reactContext, new ComponentName(reactContext, MediaPlaybackService.class), connectionCallback, null);
+        Log.d(TAG, "Trying to instance service");
+
+        mediaBrowser = new MediaBrowserCompat(reactContext, new ComponentName(reactContext, MediaPlaybackService.class), connectionCallback, null);
+
+        Log.d(TAG, "Service instanced, going to connect");
+
+        mediaBrowser.connect();
+
+        Log.d(TAG, "Service connected");
     };
 
     @Override

@@ -42,8 +42,8 @@ export const AudioList = () => {
     };
 
     const init = async () => {
-        const isInitialized = await AudioManager.init();
-        if (isInitialized) getSongs();
+        await AudioManager.init();
+        // if (isInitialized) getSongs();
     };
 
     const getSongs = async () => setSongs(await AudioManager.getAudios());
@@ -55,14 +55,15 @@ export const AudioList = () => {
     );
 
     const handleSongToggle = () => {
-        if (isPlaying) {
-            AudioManager.pause();
-            setIsPlaying(false);
-        } else {
-            if (selectedSong) AudioManager.play();
-            else AudioManager.playSpecific(songs[0].data);
-            setIsPlaying(true);
-        }
+        AudioManager.toggle();
+        // if (isPlaying) {
+        //     AudioManager.pause();
+        //     setIsPlaying(false);
+        // } else {
+        //     if (selectedSong) AudioManager.play();
+        //     else AudioManager.playSpecific(songs[0].data);
+        //     setIsPlaying(true);
+        // }
     };
 
     const handleNext = () => {
@@ -83,15 +84,13 @@ export const AudioList = () => {
                 renderItem={renderItem}
                 keyExtractor={({ id }) => `song-${id}`}
             />
-            {(selectedSong !== null) && (
-                <AudioControls
-                    isPlaying={isPlaying}
-                    duration={songs[selectedSong].duration}
-                    onToggle={handleSongToggle}
-                    onNext={handleNext}
-                    onPrev={handlePrev}
-                />
-            )}
+            <AudioControls
+                isPlaying={isPlaying}
+                duration={140000}
+                onToggle={handleSongToggle}
+                onNext={handleNext}
+                onPrev={handlePrev}
+            />
         </SafeAreaView>
     );
 };
