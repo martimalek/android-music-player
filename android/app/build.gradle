@@ -196,6 +196,8 @@ dependencies {
     implementation 'androidx.core:core:1.3.2'
     implementation 'androidx.media:media:1.2.0'
 
+    implementation 'com.google.android.exoplayer:exoplayer:2.12.1' // TODO: se only the necessary modules of exoplayer https://exoplayer.dev/hello-world.html#add-exoplayer-modules
+
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
 
     debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}") {

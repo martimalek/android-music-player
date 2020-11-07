@@ -22,11 +22,14 @@ public class PlaybackManager {
 
     private Context context;
 
+    private ExoPlayback exoPlayback;
+
     PlaybackManager(MediaPlaybackService playbackService, Context context) {
         Log.d(TAG, "Inside PlaybackManager constructor!");
         mediaSessionCallback = new MediaSessionCallback();
         this.playbackService = playbackService;
         this.context = context;
+        this.exoPlayback = new ExoPlayback(context);
     }
 
     public void handlePlayRequest() {
@@ -42,8 +45,8 @@ public class PlaybackManager {
                 Log.d(TAG, "There is an item!");
                 Log.d(TAG, "Item => " + audioUri.toString());
 
-                startMediaPlayer(audioUri);
                 playbackService.onPlaybackStart();
+                exoPlayback.play(item);
             }
         } else Log.d(TAG, "No items found... T.T");
 
