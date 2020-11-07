@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.musicplayah.Utils;
-
 public class AudioManagerPackage implements ReactPackage  {
     @NonNull
     @Override
@@ -26,7 +24,7 @@ public class AudioManagerPackage implements ReactPackage  {
     @Override
     public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
-        modules.add(new AudioManager(reactContext));
+        modules.add(new AudioManagerModule(reactContext));
 
         Log.d(Constants.TAG, "Adding modules! " + modules.size());
         return modules;

@@ -3,13 +3,19 @@ package com.musicplayah;
 import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -32,7 +38,7 @@ import java.util.Map;
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
 import static com.musicplayah.Constants.permissions;
 
-public class AudioManager extends ReactContextBaseJavaModule {
+public class AudioManagerModule extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
     private static String TAG = Constants.TAG;
 
@@ -44,9 +50,12 @@ public class AudioManager extends ReactContextBaseJavaModule {
 
     private boolean isNoisyReceiverRegistered = false;
 
-    AudioManager(ReactApplicationContext context) {
+    private MediaBrowserCompat mediaBrowser;
+
+    AudioManagerModule(ReactApplicationContext context) {
         super(context);
         reactContext = context;
+        Log.d(TAG, "Inside constructor");
 
         permissionManager = new PermissionManager();
 
@@ -57,7 +66,60 @@ public class AudioManager extends ReactContextBaseJavaModule {
             }
         });
 
-        Log.d(TAG, "Inside constructor");
+//        remoteControlReceiver = new RemoteControlReceiver();
+//
+//        Log.d(TAG, "Getting AudioManager service");
+//        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+//        Log.d(TAG, "Success!");
+//
+//        AudioManager.OnAudioFocusChangeListener afChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+//            @Override
+//            public void onAudioFocusChange(int focusChange) {
+//
+//            }
+//        };
+//
+//        int result = audioManager.requestAudioFocus(afChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+//        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+//            audioManager.unregisterMediaButtonEventReceiver(RemoteControlReceiver);
+//            // Start playback.
+//        }
+//        Log.d(TAG, "Requested successfully");
+
+    }
+
+    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
+        @Override
+        public void onConnected() {
+            Log.d(TAG, "onConnected");
+            connectToSession(mediaBrowser.getSessionToken());
+        }
+
+        @Override
+        public void onConnectionSuspended() {
+            Log.d(TAG, "onConnectionSuspended");
+
+            // The Service has crashed. Disable transport controls until it automatically reconnects
+        }
+
+        @Override
+        public void onConnectionFailed() {
+            Log.d(TAG, "onConnectionFailed");
+
+            // The Service has refused our connection
+        }
+    };
+
+    private void connectToSession(MediaSessionCompat.Token token) {
+        Log.d(TAG, "connectToSession");
+
+        Activity currentActivity = getCurrentActivity();
+
+        if (currentActivity != null) {
+            MediaControllerCompat mediaController = new MediaControllerCompat(reactContext, token);
+
+            MediaControllerCompat.setMediaController(currentActivity, mediaController);
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -201,12 +263,12 @@ public class AudioManager extends ReactContextBaseJavaModule {
     public void getAudios(Promise promise) {
         WritableArray audioArray = new WritableNativeArray();
 
-        List<Audio> audios = getAudioList();
+//        List<Audio> audios = getAudioList();
 
         try {
-            for (Audio audio: audios) {
-                audioArray.pushMap(audio.toMap());
-            }
+//            for (Audio audio: audios) {
+//                audioArray.pushMap(audio.toMap());
+//            }
 
             promise.resolve(audioArray);
         } catch (Exception e) {
@@ -219,6 +281,10 @@ public class AudioManager extends ReactContextBaseJavaModule {
     public void init(Promise promise) {
         permissionManager.permsGrantedPromise = promise;
         grantPermissions();
+
+//        Log.d(TAG, "Trying to instance service");
+//
+//        mediaBrowser = new MediaBrowserCompat(reactContext, new ComponentName(reactContext, MediaPlaybackService.class), connectionCallback, null);
     };
 
     @Override
