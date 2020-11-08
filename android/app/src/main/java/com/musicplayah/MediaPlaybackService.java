@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
 
+import com.google.android.exoplayer2.MediaItem;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,11 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     private MusicProvider musicProvider;
     private PlaybackManager playbackManager;
 
-    public ArrayList<MediaBrowserCompat.MediaItem> tracks; // TODO: Create a QueueManager
+    public static final String ACTION_CMD = "com.musicplayah.ACTION_CMD";
+    public static final String CMD_NAME = "CMD_NAME";
+    public static final String CMD_PAUSE = "CMD_PAUSE";
+
+    public ArrayList<MediaItem> tracks; // TODO: Create a QueueManager
 
     public MediaPlaybackService() {
         Log.d(TAG, "MediaPlaybackService constructed!");
@@ -45,7 +51,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         mediaSession.setPlaybackState(stateBuilder.build());
         Log.d(TAG, "Inside MediaPlaybackService onCreate");
 
-        playbackManager = new PlaybackManager(this, getApplicationContext());
+        playbackManager = new PlaybackManager(this, getApplicationContext(), musicProvider);
 
         mediaSession.setCallback(playbackManager.getMediaSessionCallback());
 
@@ -54,6 +60,8 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         // TODO: Get initial music
 
         tracks = musicProvider.getAllSongs();
+
+        playbackManager.updatePlaybackState();
     }
 
     @Nullable
@@ -107,5 +115,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     @Override
     public void onPlaybackStateUpdated(PlaybackStateCompat newState) {
         Log.d(TAG, "onPlaybackStateUpdated!");
+        mediaSession.setPlaybackState(newState);
     }
 }

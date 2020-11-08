@@ -1,16 +1,11 @@
 package com.musicplayah;
 
 import android.content.Context;
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
-import java.io.IOException;
-
+import com.google.android.exoplayer2.MediaItem;
 
 public class PlaybackManager {
     private static String TAG = Constants.TAG;
@@ -18,58 +13,30 @@ public class PlaybackManager {
     private MediaSessionCallback mediaSessionCallback;
     private MediaPlaybackService playbackService;
 
-    private MediaPlayer mediaPlayer;
-
     private Context context;
 
     private ExoPlayback exoPlayback;
 
-    PlaybackManager(MediaPlaybackService playbackService, Context context) {
+    PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider) {
         Log.d(TAG, "Inside PlaybackManager constructor!");
         mediaSessionCallback = new MediaSessionCallback();
         this.playbackService = playbackService;
         this.context = context;
-        this.exoPlayback = new ExoPlayback(context);
+        this.exoPlayback = new ExoPlayback(context, musicProvider);
     }
 
     public void handlePlayRequest() {
         Log.d(TAG, "Handling Play request!"); // TODO
 
-        if (mediaPlayer == null) initMediaPlayer();
+        MediaItem item = exoPlayback.isPlaying() ? exoPlayback.getCurrentPlaying() : playbackService.tracks.get(0);
 
-        MediaBrowserCompat.MediaItem item = playbackService.tracks.get(0);
+        Log.d(TAG, "Current item => " + item.mediaId);
 
-        if (item != null) {
-            Uri audioUri = item.getDescription().getMediaUri();
-            if (audioUri != null) {
-                Log.d(TAG, "There is an item!");
-                Log.d(TAG, "Item => " + audioUri.toString());
+        Log.d(TAG, "Item => " + item.mediaId);
 
-                playbackService.onPlaybackStart();
-                exoPlayback.play(item);
-            }
-        } else Log.d(TAG, "No items found... T.T");
+        playbackService.onPlaybackStart();
+        exoPlayback.play(item);
 
-    }
-
-    private void initMediaPlayer() {
-        mediaPlayer = new MediaPlayer();
-    }
-
-    private void startMediaPlayer(Uri audioUri) {
-        try {
-            mediaPlayer.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-            );
-            mediaPlayer.setDataSource(context, audioUri);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-        } catch (IOException e) {
-            Log.d(TAG, "Exception while preparing MediaPlayer " + e.getMessage());
-        }
     }
 
     public void handlePauseRequest() {
@@ -99,6 +66,23 @@ public class PlaybackManager {
         public void onStop() {
             handleStopRequest();
         }
+    }
+
+    private long getAvailableActions() {
+        long actions = PlaybackStateCompat.ACTION_PLAY_PAUSE |
+                       PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID |
+                       PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH |
+                       PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
+                       PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
+        if (exoPlayback.isPlaying()) actions |= PlaybackStateCompat.ACTION_PAUSE;
+        else actions |= PlaybackStateCompat.ACTION_PLAY;
+        return actions;
+    }
+
+    public void updatePlaybackState() {
+        PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder().setActions(getAvailableActions());
+
+
     }
 
     public interface PlaybackServiceCallback {
