@@ -11,7 +11,7 @@ public class BecomingNoisyReceiver extends BroadcastReceiver {
 
     public static IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
-    BecomingNoisyReceiver(Runnable onNoisyReceived) {
+    public BecomingNoisyReceiver(Runnable onNoisyReceived) {
         this.onNoisyReceivedRunnable = onNoisyReceived;
     }
 

@@ -10,6 +10,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -41,8 +42,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
     private PermissionManager permissionManager;
 
-    private BroadcastReceiver becomingNoisyReceiver;
-
     private boolean isNoisyReceiverRegistered = false;
 
     private MediaBrowserCompat mediaBrowser;
@@ -55,13 +54,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         Log.d(TAG, "Inside constructor");
 
         permissionManager = new PermissionManager();
-
-        becomingNoisyReceiver = new BecomingNoisyReceiver(new Runnable() {
-            @Override
-            public void run() {
-                pause();
-            }
-        });
 
 //        remoteControlReceiver = new RemoteControlReceiver();
 //
@@ -118,10 +110,25 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
             MediaControllerCompat mediaController = new MediaControllerCompat(reactContext, token);
 
             MediaControllerCompat.setMediaController(currentActivity, mediaController);
+
+            mediaController.registerCallback(controllerCallback);
         } else {
             Log.d(TAG, "There is no Activity");
         }
     }
+
+    MediaControllerCompat.Callback controllerCallback =
+        new MediaControllerCompat.Callback() {
+            @Override
+            public void onMetadataChanged(MediaMetadataCompat metadata) {
+                Log.d(TAG, "Metadata changed!");
+            }
+
+            @Override
+            public void onPlaybackStateChanged(PlaybackStateCompat state) {
+                Log.d(TAG, "State changed!");
+            }
+        };
 
     private Activity getActivity() {
         if (currActivity != null) return currActivity;
@@ -132,51 +139,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
     @Override
     public String getName() {
         return "AudioManager";
-    }
-
-    private void registerNoisyReceiver() {
-        if (!isNoisyReceiverRegistered) {
-            getReactApplicationContext().registerReceiver(becomingNoisyReceiver, BecomingNoisyReceiver.intentFilter);
-            isNoisyReceiverRegistered = true;
-        }
-    }
-
-    private void unRegisterNoisyReceiver() {
-        getReactApplicationContext().unregisterReceiver(becomingNoisyReceiver);
-        isNoisyReceiverRegistered = false;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @ReactMethod
-    public void playAudio(String path){
-        if (mp != null) mp.stop();
-        mp = new MediaPlayer();
-
-        registerNoisyReceiver();
-
-        try {
-            Uri audioUri = Uri.parse("file:///" + path);;
-            mp.setAudioAttributes(
-                new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-            );
-            mp.setDataSource(getReactApplicationContext(), audioUri);
-            mp.prepare();
-            mp.start();
-
-            mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    Log.d(TAG, "Audio ended");
-                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_ENDED_EVENT, true);
-                }
-            });
-        } catch (Exception e) {
-            Log.d(TAG, "Exception while trying to play " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     private void grantPermissions() {
@@ -190,19 +152,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         } else Log.d(TAG, "Permissions already granted!");
     }
 
-    public void stop() {
-        if (mp != null) mp.stop();
-        unRegisterNoisyReceiver();
-    }
-
-    @ReactMethod
-    public void play() {
-        if (mp != null) {
-            mp.start();
-            registerNoisyReceiver();
-        }
-    }
-
     @ReactMethod
     public void toggle() {
         Log.d(TAG, "Toggling...");
@@ -210,6 +159,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         Activity activity = getActivity();
         if (activity != null) {
             MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(activity);
+            Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
             if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) mediaController.getTransportControls().pause();
             else mediaController.getTransportControls().play();
         }

@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.media.MediaBrowserServiceCompat;
 
 import com.google.android.exoplayer2.MediaItem;
+import com.musicplayah.Playback.PlaybackManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     private static String TAG = Constants.TAG;
 
     private MediaSessionCompat mediaSession;
+//    private MediaNotificationManager mediaNotificationManager;
     private PlaybackStateCompat.Builder stateBuilder;
 
     private MusicProvider musicProvider;
