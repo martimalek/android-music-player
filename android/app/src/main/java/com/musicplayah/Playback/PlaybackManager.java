@@ -24,7 +24,7 @@ public class PlaybackManager implements Playback.Callback {
 
     private ExoPlayback exoPlayback;
 
-    PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider) {
+    public PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider) {
         Log.d(TAG, "Inside PlaybackManager constructor!");
         mediaSessionCallback = new MediaSessionCallback();
         this.playbackService = playbackService;
