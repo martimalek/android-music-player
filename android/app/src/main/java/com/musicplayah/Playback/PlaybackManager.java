@@ -70,6 +70,7 @@ public class PlaybackManager implements Playback.Callback {
     @Override
     public void onCompletion() {
         // TODO: Handle track end logic, like play next or stop playing and go to sleep
+        Log.d(TAG, "Track ended, should we play another one?");
     }
 
     @Override
@@ -98,6 +99,7 @@ public class PlaybackManager implements Playback.Callback {
             handlePauseRequest();
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onStop() {
             handleStopRequest();

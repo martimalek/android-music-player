@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.RemoteException;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -13,6 +14,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -63,11 +65,14 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     public void startNotification() {
         if (!hasStarted) {
+            Log.d(TAG, "Starting notification");
             metadata = mediaController.getMetadata();
+            Log.d(TAG, "metadata " + metadata);
             playbackState = mediaController.getPlaybackState();
 
             Notification notification = createNotification();
             if (notification != null) {
+                Log.d(TAG, "Notification " + notification.toString());
                 mediaController.registerCallback(controllerCallback);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_PLAY);
@@ -77,19 +82,55 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 service.registerReceiver(this, filter);
 
                 service.startForeground(NOTIFICATION_ID, notification);
+                Log.d(TAG, "Service started");
+
                 hasStarted = true;
             }
         }
     }
 
-    // TODO: stopNotificaton
+
+    public void stopNotification() {
+        Log.d(TAG, "stopNotification");
+        if (hasStarted) {
+            hasStarted = false;
+            mediaController.unregisterCallback(controllerCallback);
+            try {
+                notificationManager.cancel(NOTIFICATION_ID);
+                service.unregisterReceiver(this);
+            } catch (IllegalArgumentException e) {
+                // Ignored
+            }
+            service.stopForeground(true);
+        }
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d(TAG, "Received notificationManager");
+        final String action = intent.getAction();
 
+        switch (action) {
+            case ACTION_PAUSE:
+                transportControls.pause();
+                break;
+            case ACTION_PLAY:
+                transportControls.play();
+                break;
+            case ACTION_NEXT:
+                transportControls.skipToNext();
+                break;
+            case ACTION_PREV:
+                transportControls.skipToPrevious();
+                break;
+            default:
+                Log.d(TAG, "Notification Manager received an invalid action");
+        }
     }
 
     private void updateSessionToken() {
+        Log.d(TAG, "NotificationManager updateSessionToken");
+
         MediaSessionCompat.Token token = service.getSessionToken();
         if (sessionToken == null && token != null || sessionToken != null && !sessionToken.equals(token)) {
             if (mediaController != null) mediaController.unregisterCallback(controllerCallback);
@@ -102,27 +143,54 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
     }
 
+    private PendingIntent createContentIntent(MediaDescriptionCompat description) {
+        Intent openUI = new Intent(service, MainActivity.class);
+        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        openUI.putExtra(MainActivity.START_FULLSCREEN, true);
+        if (description != null) {
+            openUI.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
+        }
+        return PendingIntent.getActivity(service, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT);
+    }
+
     private final MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onSessionDestroyed() {
             super.onSessionDestroyed();
+            Log.d(TAG, "Session destroyed");
+            updateSessionToken();
         }
 
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            super.onPlaybackStateChanged(state);
+            playbackState = state;
+            Log.d(TAG, "Notification new state " + state);
+            if (state.getState() == PlaybackStateCompat.STATE_STOPPED || state.getState() == PlaybackStateCompat.STATE_NONE) stopNotification();
+            else {
+                Notification notification = createNotification();
+                if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
+            }
         }
 
         @Override
-        public void onMetadataChanged(MediaMetadataCompat metadata) {
-            super.onMetadataChanged(metadata);
+        public void onMetadataChanged(MediaMetadataCompat newMetadata) {
+            metadata = newMetadata;
+            Log.d(TAG, "Updating metadata");
+            Notification notification = createNotification();
+            if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
         }
     };
 
     private Notification createNotification() {
         Log.d(TAG, "Creating notification...");
 
-        if (metadata == null || playbackState == null) return null;
+        if (metadata == null || playbackState == null) {
+            Log.d(TAG, "Something is null");
+            if (metadata == null) {
+                Log.d(TAG, "metadata is null");
+            }
+//            return null; //  TODO: Uncomment once metadata is correctly handled
+        }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
         int toggleButtonPosition = 0;
@@ -132,11 +200,16 @@ public class MediaNotificationManager extends BroadcastReceiver {
             toggleButtonPosition = 1;
         }
 
-//        addPlayPauseAction(builder); // TODO
+        addPlayPauseAction(builder);
 
         if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) builder.addAction(R.drawable.ic_skip_next_white_24dp, service.getString(R.string.label_next), nextIntent);
 
-        MediaDescriptionCompat description = metadata.getDescription();
+
+//        MediaDescriptionCompat description = metadata.getDescription(); //  TODO: Uncomment once metadata is correctly handled
+
+        CharSequence title = "TITLE";
+        CharSequence subtitle = "Subtitle";
+
 
         builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(new int[]{toggleButtonPosition})
@@ -144,24 +217,35 @@ public class MediaNotificationManager extends BroadcastReceiver {
             .setSmallIcon(R.drawable.ic_notification)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setUsesChronometer(true)
-            .setContentIntent(createContentIntent(description))
-            .setContentTitle(description.getTitle())
-            .setContentText(description.getSubtitle());
+//            .setContentIntent(createContentIntent(description))
+            .setContentTitle(title) // description.getTitle()
+            .setContentText(subtitle); // description.getSubtitle()
 
         setNotificationPlaybackState(builder);
 
         return builder.build();
     }
 
-    private PendingIntent createContentIntent(MediaDescriptionCompat description) {
-        Intent openUI = new Intent(service, MainActivity.class);
-        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//        openUI.putExtra(MainActivity.EXTRA_START_FULLSCREEN, true);
-//        if (description != null)  openUI.putExtra(MediaBrowserUampActivity.EXTRA_CURRENT_MEDIA_DESCRIPTION, description);
-        return PendingIntent.getActivity(service, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT);
+    private void addPlayPauseAction(NotificationCompat.Builder builder) {
+        Log.d(TAG, "Adding play pause action in notification");
+        String label;
+        int icon;
+        PendingIntent intent;
+        if (playbackState.getState() == PlaybackStateCompat.STATE_PLAYING) {
+            label = service.getString(R.string.label_pause);
+            icon = R.drawable.uamp_ic_pause_white_24dp;
+            intent = pauseIntent;
+        } else {
+            label = service.getString(R.string.label_play);
+            icon = R.drawable.uamp_ic_play_arrow_white_24dp;
+            intent = playIntent;
+        }
+        builder.addAction(new NotificationCompat.Action(icon, label, intent));
     }
 
     private void setNotificationPlaybackState(NotificationCompat.Builder builder) {
+        Log.d(TAG, "NotificationManager setNotificationPlaybackState");
+
         if (playbackState == null || !hasStarted) {
             service.stopForeground(true);
             return;

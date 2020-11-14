@@ -1,15 +1,19 @@
 package com.musicplayah;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
+import androidx.media.session.MediaButtonReceiver;
 
 import com.google.android.exoplayer2.MediaItem;
 import com.musicplayah.Playback.PlaybackManager;
@@ -23,7 +27,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     private static String TAG = Constants.TAG;
 
     private MediaSessionCompat mediaSession;
-//    private MediaNotificationManager mediaNotificationManager;
+    private MediaNotificationManager mediaNotificationManager;
     private PlaybackStateCompat.Builder stateBuilder;
 
     private MusicProvider musicProvider;
@@ -64,6 +68,26 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         tracks = musicProvider.getAllSongs();
 
         playbackManager.updatePlaybackState();
+
+        mediaNotificationManager = new MediaNotificationManager(this);
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "Starting service");
+        if (intent != null) {
+            String action = intent.getAction();
+            String command = intent.getStringExtra(CMD_NAME);
+            if (ACTION_CMD.equals(action)) {
+                if (CMD_PAUSE.equals(command)) playbackManager.handlePauseRequest();
+            } else {
+//                MediaButtonReceiver.handleIntent(mediaSession, intent); // TODO: Uncomment once media button receiver is done
+            }
+        }
+
+//        mDelayedStopHandler.removeCallbacksAndMessages(null);
+//        mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+        return START_STICKY;
     }
 
     @Nullable
@@ -112,11 +136,24 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     @Override
     public void onNotificationRequired() {
         Log.d(TAG, "onNotificationRequired!");
+        mediaNotificationManager.startNotification();
+
     }
 
     @Override
     public void onPlaybackStateUpdated(PlaybackStateCompat newState) {
         Log.d(TAG, "onPlaybackStateUpdated!");
         mediaSession.setPlaybackState(newState);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "Destroying service!");
+        playbackManager.handleStopRequest();
+        mediaNotificationManager.stopNotification();
+
+        // delayedStopHandler.removeCallbacksAndMessages(null);
+        mediaSession.release();
     }
 }
