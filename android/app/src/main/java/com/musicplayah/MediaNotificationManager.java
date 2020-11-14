@@ -1,11 +1,15 @@
 package com.musicplayah;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.RemoteException;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -15,6 +19,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -63,6 +68,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         notificationManager.cancelAll();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void startNotification() {
         if (!hasStarted) {
             Log.d(TAG, "Starting notification");
@@ -71,6 +77,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             playbackState = mediaController.getPlaybackState();
 
             Notification notification = createNotification();
+
             if (notification != null) {
                 Log.d(TAG, "Notification " + notification.toString());
                 mediaController.registerCallback(controllerCallback);
@@ -88,7 +95,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
             }
         }
     }
-
 
     public void stopNotification() {
         Log.d(TAG, "stopNotification");
@@ -144,13 +150,24 @@ public class MediaNotificationManager extends BroadcastReceiver {
     }
 
     private PendingIntent createContentIntent(MediaDescriptionCompat description) {
-        Intent openUI = new Intent(service, MainActivity.class);
-        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        openUI.putExtra(MainActivity.START_FULLSCREEN, true);
+//        Intent openUI = new Intent(service, MainActivity.class);
+//        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//        openUI.putExtra(MainActivity.START_FULLSCREEN, true);
+//        if (description != null) {
+//            openUI.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
+//        }
+
+        Intent resultIntent = new Intent(service, MainActivity.class);
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        resultIntent.putExtra(MainActivity.START_FULLSCREEN, true);
         if (description != null) {
-            openUI.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
+            resultIntent.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
         }
-        return PendingIntent.getActivity(service, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT);
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(service);
+        stackBuilder.addNextIntentWithParentStack(resultIntent);
+
+        return stackBuilder.getPendingIntent(REQUEST_CODE, PendingIntent.FLAG_CANCEL_CURRENT);
     }
 
     private final MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
@@ -161,6 +178,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             updateSessionToken();
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             playbackState = state;
@@ -172,6 +190,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             }
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onMetadataChanged(MediaMetadataCompat newMetadata) {
             metadata = newMetadata;
@@ -181,6 +200,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
     };
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private Notification createNotification() {
         Log.d(TAG, "Creating notification...");
 
@@ -192,7 +212,15 @@ public class MediaNotificationManager extends BroadcastReceiver {
 //            return null; //  TODO: Uncomment once metadata is correctly handled
         }
 
+        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_DEFAULT);
+
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
+        assert manager != null;
+        manager.createNotificationChannel(chan);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
+
         int toggleButtonPosition = 0;
 
         if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) != 0) {
@@ -204,26 +232,29 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) builder.addAction(R.drawable.ic_skip_next_white_24dp, service.getString(R.string.label_next), nextIntent);
 
+        CharSequence title = "Song title";
+        CharSequence subtitle = "Song artist";
 
-//        MediaDescriptionCompat description = metadata.getDescription(); //  TODO: Uncomment once metadata is correctly handled
+        Notification notification = builder.setOngoing(true)
+                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(toggleButtonPosition)
+                        .setMediaSession(sessionToken))
+                .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setUsesChronometer(true)
+                .setContentIntent(createContentIntent(null)) // TODO: Pass description here!!
+                .setContentTitle(title) // description.getTitle()
+                .setContentText(subtitle) // description.getSubtitle()
+                .build();
 
-        CharSequence title = "TITLE";
-        CharSequence subtitle = "Subtitle";
-
-
-        builder.setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(new int[]{toggleButtonPosition})
-                .setMediaSession(sessionToken))
-            .setSmallIcon(R.drawable.ic_notification)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setUsesChronometer(true)
-//            .setContentIntent(createContentIntent(description))
-            .setContentTitle(title) // description.getTitle()
-            .setContentText(subtitle); // description.getSubtitle()
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(service);
+        notificationManager.notify(NOTIFICATION_ID, notification);
 
         setNotificationPlaybackState(builder);
 
-        return builder.build();
+        return notification;
     }
 
     private void addPlayPauseAction(NotificationCompat.Builder builder) {

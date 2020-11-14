@@ -15,8 +15,10 @@
       android:allowBackup="false"
       android:requestLegacyExternalStorage="true"
       android:theme="@style/AppTheme">
-        <service android:name=".MediaPlaybackService"
-            android:exported="false">
+        <service
+            android:name=".MediaPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
