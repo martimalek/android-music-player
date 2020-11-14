@@ -237,8 +237,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         Notification notification = builder.setOngoing(true)
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(toggleButtonPosition)
-                        .setMediaSession(sessionToken))
+                .setShowActionsInCompactView(toggleButtonPosition)
+                .setMediaSession(sessionToken))
+                .setOnlyAlertOnce(true)
                 .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setSmallIcon(R.drawable.ic_notification)

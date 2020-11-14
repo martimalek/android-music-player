@@ -1,4 +1,4 @@
-package com.musicplayah;
+package com.musicplayah.Receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

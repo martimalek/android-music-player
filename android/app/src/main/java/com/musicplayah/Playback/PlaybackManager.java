@@ -44,7 +44,6 @@ public class PlaybackManager implements Playback.Callback {
 
         playbackService.onPlaybackStart();
         exoPlayback.play(item);
-
     }
 
     public void handlePauseRequest() {
@@ -104,6 +103,7 @@ public class PlaybackManager implements Playback.Callback {
         public void onStop() {
             handleStopRequest();
         }
+
     }
 
     private long getAvailableActions() {

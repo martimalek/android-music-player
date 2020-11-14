@@ -2,12 +2,8 @@ package com.musicplayah;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -15,6 +11,7 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -29,8 +26,11 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Observer;
 
+import static com.musicplayah.Constants.PERMISSION_OBSERVER_KEY;
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
 import static com.musicplayah.Constants.permissions;
 
@@ -38,15 +38,12 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
     private static String TAG = Constants.TAG;
 
-    private MediaPlayer mp;
-
     private PermissionManager permissionManager;
-
-    private boolean isNoisyReceiverRegistered = false;
+    private Observer permissionObserver;
 
     private MediaBrowserCompat mediaBrowser;
 
-    private Activity currActivity;
+    private Promise initialPromise;
 
     AudioManagerModule(ReactApplicationContext context) {
         super(context);
@@ -55,26 +52,18 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
         permissionManager = new PermissionManager();
 
-//        remoteControlReceiver = new RemoteControlReceiver();
-//
-//        Log.d(TAG, "Getting AudioManager service");
-//        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-//        Log.d(TAG, "Success!");
-//
-//        AudioManager.OnAudioFocusChangeListener afChangeListener = new AudioManager.OnAudioFocusChangeListener() {
-//            @Override
-//            public void onAudioFocusChange(int focusChange) {
-//
-//            }
-//        };
-//
-//        int result = audioManager.requestAudioFocus(afChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-//        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-//            audioManager.unregisterMediaButtonEventReceiver(RemoteControlReceiver);
-//            // Start playback.
-//        }
-//        Log.d(TAG, "Requested successfully");
+        permissionObserver = (o, permsObject) -> {
+            Log.d(TAG, "Updating....");
+            Pair<String, Boolean> permsPair = (Pair<String, Boolean>) permsObject;
+            if (permsPair.first.equals(PERMISSION_OBSERVER_KEY) && permsPair.second) {
+                Log.d(TAG, "Perms have been granted! Connecting to mediaBrowser...");
+                mediaBrowser.connect();
 
+                initialPromise.resolve(true);
+            } else initialPromise.reject("E_PERMS", "User did not accept permission");
+        };
+
+        permissionManager.isPermissionGranted.addObserver(permissionObserver);
     }
 
     private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
@@ -82,20 +71,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         public void onConnected() {
             Log.d(TAG, "onConnected");
             connectToSession(mediaBrowser.getSessionToken());
-        }
-
-        @Override
-        public void onConnectionSuspended() {
-            Log.d(TAG, "onConnectionSuspended");
-
-            // The Service has crashed. Disable transport controls until it automatically reconnects
-        }
-
-        @Override
-        public void onConnectionFailed() {
-            Log.d(TAG, "onConnectionFailed");
-
-            // The Service has refused our connection
         }
     };
 
@@ -128,12 +103,12 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
             public void onPlaybackStateChanged(PlaybackStateCompat state) {
                 Log.d(TAG, "State changed!");
             }
-        };
 
-    private Activity getActivity() {
-        if (currActivity != null) return currActivity;
-        return getCurrentActivity();
-    }
+            @Override
+            public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
+                Log.d(TAG, "Queue changed!");
+            }
+        };
 
     @NonNull
     @Override
@@ -156,19 +131,19 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
     public void toggle() {
         Log.d(TAG, "Toggling...");
 
-        Activity activity = getActivity();
+        Activity activity = getCurrentActivity();
         if (activity != null) {
             MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(activity);
             Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
-            if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) mediaController.getTransportControls().pause();
-            else mediaController.getTransportControls().play();
+            if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+                mediaController.getTransportControls().pause();
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
+            }
+            else {
+                mediaController.getTransportControls().play();
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_RESUMED_EVENT, true);
+            }
         }
-    }
-
-    @ReactMethod
-    public void pause() {
-        if (mp != null) mp.pause();
-        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -192,18 +167,10 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void init(Promise promise) {
-        permissionManager.permsGrantedPromise = promise; // TODO: Await for perms granted here and Promise.resolve on mediaBrowser.connect
+        Log.d(TAG, "Initializing service...");
+        initialPromise = promise;
         grantPermissions();
-
-        Log.d(TAG, "Trying to instance service");
-
         mediaBrowser = new MediaBrowserCompat(reactContext, new ComponentName(reactContext, MediaPlaybackService.class), connectionCallback, null);
-
-        Log.d(TAG, "Service instanced, going to connect");
-
-        mediaBrowser.connect();
-
-        Log.d(TAG, "Service connected");
     };
 
     @Override
@@ -211,6 +178,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         final Map<String, Object> constants = new HashMap<>();
         constants.put(Constants.AUDIO_ENDED_EVENT, Constants.AUDIO_ENDED_EVENT);
         constants.put(Constants.AUDIO_PAUSED_EVENT, Constants.AUDIO_PAUSED_EVENT);
+        constants.put(Constants.AUDIO_RESUMED_EVENT, Constants.AUDIO_RESUMED_EVENT);
         return constants;
     }
 }

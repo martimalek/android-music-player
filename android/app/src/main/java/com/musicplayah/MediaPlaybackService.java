@@ -133,11 +133,11 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         stopForeground(true);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onNotificationRequired() {
         Log.d(TAG, "onNotificationRequired!");
         mediaNotificationManager.startNotification();
-
     }
 
     @Override

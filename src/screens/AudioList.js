@@ -16,6 +16,7 @@ export const AudioList = () => {
         init();
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_ENDED, handleAudioEnd);
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_PAUSED, handleAudioStopped);
+        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_RESUMED, handleAudioResumed);
 
         return () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
@@ -28,6 +29,7 @@ export const AudioList = () => {
     }, [hasAudioEnded]);
 
     const handleAudioStopped = () => setIsPlaying(false);
+    const handleAudioResumed = () => setIsPlaying(true);
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
@@ -54,17 +56,7 @@ export const AudioList = () => {
         </TouchableOpacity>
     );
 
-    const handleSongToggle = () => {
-        AudioManager.toggle();
-        // if (isPlaying) {
-        //     AudioManager.pause();
-        //     setIsPlaying(false);
-        // } else {
-        //     if (selectedSong) AudioManager.play();
-        //     else AudioManager.playSpecific(songs[0].data);
-        //     setIsPlaying(true);
-        // }
-    };
+    const handleSongToggle = AudioManager.toggle;
 
     const handleNext = () => {
         if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);

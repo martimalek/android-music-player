@@ -22,11 +22,10 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
-import com.musicplayah.BecomingNoisyReceiver;
+import com.musicplayah.Receivers.BecomingNoisyReceiver;
 import com.musicplayah.Constants;
 import com.musicplayah.MediaPlaybackService;
 import com.musicplayah.MusicProvider;
-import com.musicplayah.Playback.Playback;
 
 public class ExoPlayback implements Playback {
     private String TAG = Constants.TAG;

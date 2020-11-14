@@ -13,23 +13,14 @@ class AudioManager {
         NativeModules.AudioManager.playAudio(path);
     }
 
-    static play() {
-        NativeModules.AudioManager.play();
-    }
-
-    static pause() {
-        NativeModules.AudioManager.pause();
-    }
-
     static toggle() {
         NativeModules.AudioManager.toggle();
     }
 
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
     static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
+    static ON_AUDIO_RESUMED = NativeModules.AudioManager.ON_AUDIO_RESUMED;
 }
-
-console.log(NativeModules.AudioManager)
 
 export default AudioManager;
 
