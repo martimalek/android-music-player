@@ -6,6 +6,7 @@ import android.content.IntentFilter;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Build;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
@@ -15,6 +16,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -108,7 +110,7 @@ public class ExoPlayback implements Playback {
 
             exoPlayer.setAudioAttributes(audioAttributes);
 
-            MediaItem mediaItem = musicProvider.getTrackById(item.mediaId);
+            MediaItem mediaItem = mapToExoMediaItem(musicProvider.getTrackById(item.mediaId));
 
             DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, "musicplayah"), null);
             ProgressiveMediaSource.Factory mediaFactory = new ProgressiveMediaSource.Factory(dataSourceFactory, new DefaultExtractorsFactory());
@@ -117,8 +119,6 @@ public class ExoPlayback implements Playback {
             exoPlayer.prepare();
             Log.d(TAG, "ExoPlayer prepared");
         }
-
-//        exoPlayer.play(); // TODO: Remove, exoPlayer.prepare should trigger #onPlayerStateChanged
 
         configurePlayerState();
     }
@@ -135,6 +135,24 @@ public class ExoPlayback implements Playback {
     @Override
     public void setCallback(Callback callback) {
         this.callback = callback;
+    }
+
+    public MediaItem mapToExoMediaItem(MediaBrowserCompat.MediaItem mediaItem) {
+        MediaMetadata metadata;
+        try {
+            metadata = new MediaMetadata.Builder()
+                    .setTitle(mediaItem.getDescription().getTitle().toString())
+                    .build();
+        } catch (NullPointerException e) {
+            metadata = new MediaMetadata.Builder()
+                    .setTitle("") // No title
+                    .build();
+        }
+
+        return new MediaItem.Builder()
+                .setUri(mediaItem.getDescription().getMediaUri())
+                .setMediaMetadata(metadata)
+                .build();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

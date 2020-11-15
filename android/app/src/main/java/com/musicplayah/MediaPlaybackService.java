@@ -3,9 +3,11 @@ package com.musicplayah;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.media.browse.MediaBrowser;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -39,7 +41,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     public static final String CMD_NAME = "CMD_NAME";
     public static final String CMD_PAUSE = "CMD_PAUSE";
 
-    public ArrayList<MediaItem> tracks; // TODO: Create a QueueManager
+    public ArrayList<MediaBrowserCompat.MediaItem> tracks; // TODO: Create a QueueManager
 
     public MediaPlaybackService() {
         Log.d(TAG, "MediaPlaybackService constructed!");
@@ -70,8 +72,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         Intent intent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT); // 99 is the request code
         mediaSession.setSessionActivity(pendingIntent);
-
-        // TODO: Get initial music
 
         tracks = musicProvider.getAllSongs();
 
@@ -118,10 +118,26 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
     @Override
     public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
-        Log.d(TAG, "MediaPlaybackService onLoadChildren");
-        result.sendResult(null);
+        Log.d(TAG, "MediaPlaybackService onLoadChildren HEREEEEEE");
+
+        ArrayList<MediaBrowserCompat.MediaItem> mediaItems = musicProvider.getAllSongs();
+        result.sendResult(mediaItems);
     }
 
+//    private List<MediaBrowserCompat.MediaItem> mapToMediaItems(List<MediaItem> mediaExoItems) {
+//        List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+//        for (MediaItem mediaItem : mediaExoItems) {
+//            MediaDescriptionCompat mediaDescription = new MediaDescriptionCompat.Builder()
+//                    .setTitle(mediaItem.title)
+//                    .setSubtitle(mediaItem.subtitle)
+//                    .setMediaId(mediaItem.mediaId)
+//                    .build();
+//
+//            int flags = MediaBrowser.MediaItem.FLAG_PLAYABLE;
+//
+//            MediaBrowserCompat.MediaItem mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, flags);
+//            mediaItems.add(mediaItem);
+//    }
 
     @Override
     public void onPlaybackStart() {
