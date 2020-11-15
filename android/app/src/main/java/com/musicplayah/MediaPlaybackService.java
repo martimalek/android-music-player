@@ -1,5 +1,7 @@
 package com.musicplayah;
 
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -62,6 +64,12 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         mediaSession.setCallback(playbackManager.getMediaSessionCallback());
 
         setSessionToken(mediaSession.getSessionToken());
+
+        Context context = getApplicationContext();
+
+        Intent intent = new Intent(context, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT); // 99 is the request code
+        mediaSession.setSessionActivity(pendingIntent);
 
         // TODO: Get initial music
 
