@@ -1,5 +1,7 @@
 package com.musicplayah.Playback;
 
+import android.support.v4.media.session.MediaSessionCompat;
+
 import com.google.android.exoplayer2.MediaItem;
 
 public interface Playback {
@@ -16,7 +18,7 @@ public interface Playback {
 
 //    void updateLastKnownStreamPosition();
 
-    void play(MediaItem item);
+    void play(MediaSessionCompat.QueueItem item);
 
     void pause();
 

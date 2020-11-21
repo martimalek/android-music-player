@@ -15,6 +15,7 @@ import com.google.android.exoplayer2.MediaMetadata;
 import com.musicplayah.Constants;
 import com.musicplayah.MediaPlaybackService;
 import com.musicplayah.MusicProvider;
+import com.musicplayah.QueueManager;
 
 public class PlaybackManager implements Playback.Callback {
     private static String TAG = Constants.TAG;
@@ -23,47 +24,33 @@ public class PlaybackManager implements Playback.Callback {
     private MediaPlaybackService playbackService;
 
     private Context context;
-
+    private QueueManager queueManager;
     private ExoPlayback exoPlayback;
 
-    public PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider) {
+    public PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider, QueueManager queueManager, ExoPlayback playback) {
         Log.d(TAG, "Inside PlaybackManager constructor!");
-        mediaSessionCallback = new MediaSessionCallback();
+        this.mediaSessionCallback = new MediaSessionCallback();
         this.playbackService = playbackService;
         this.context = context;
-        this.exoPlayback = new ExoPlayback(context, musicProvider);
+        this.queueManager = queueManager;
+        this.exoPlayback = playback;
+
         this.exoPlayback.setCallback(this);
     }
 
     public void handlePlayRequest() {
         Log.d(TAG, "Handling Play request!");
 
-        MediaItem item = exoPlayback.isPlaying() ? exoPlayback.getCurrentPlaying() : mapToExoMediaItem(playbackService.tracks.get(0));
+        MediaSessionCompat.QueueItem currentItem = queueManager.getCurrentMusic();
 
-        Log.d(TAG, "Current item => " + item.mediaId);
+//        MediaItem item = exoPlayback.isPlaying() ? exoPlayback.getCurrentPlaying() : mapToExoMediaItem(playbackService.tracks.get(0));
 
-        Log.d(TAG, "Item => " + item.mediaId);
+        Log.d(TAG, "Current item => " + currentItem.getDescription().getMediaId());
 
-        playbackService.onPlaybackStart();
-        exoPlayback.play(item);
-    }
-
-    private MediaItem mapToExoMediaItem(MediaBrowserCompat.MediaItem mediaItem) {
-        MediaMetadata metadata;
-        try {
-            metadata = new MediaMetadata.Builder()
-                .setTitle(mediaItem.getDescription().getTitle().toString())
-                .build();
-        } catch (NullPointerException e) {
-            metadata = new MediaMetadata.Builder()
-                .setTitle("") // No title
-                .build();
+        if (currentItem != null) {
+            playbackService.onPlaybackStart();
+            exoPlayback.play(currentItem);
         }
-
-        return new MediaItem.Builder()
-            .setUri(mediaItem.getDescription().getMediaUri())
-            .setMediaMetadata(metadata)
-            .build();
     }
 
     public void handlePauseRequest() {
@@ -82,6 +69,24 @@ public class PlaybackManager implements Playback.Callback {
         updatePlaybackState();
     }
 
+    private MediaItem mapToExoMediaItem(MediaBrowserCompat.MediaItem mediaItem) {
+        MediaMetadata metadata;
+        try {
+            metadata = new MediaMetadata.Builder()
+                    .setTitle(mediaItem.getDescription().getTitle().toString())
+                    .build();
+        } catch (NullPointerException e) {
+            metadata = new MediaMetadata.Builder()
+                    .setTitle("") // No title
+                    .build();
+        }
+
+        return new MediaItem.Builder()
+                .setUri(mediaItem.getDescription().getMediaUri())
+                .setMediaMetadata(metadata)
+                .build();
+    }
+
     public MediaSessionCompat.Callback getMediaSessionCallback() {
         return mediaSessionCallback;
     }
@@ -90,6 +95,8 @@ public class PlaybackManager implements Playback.Callback {
     public void onCompletion() {
         // TODO: Handle track end logic, like play next or stop playing and go to sleep
         Log.d(TAG, "Track ended, should we play another one?");
+
+        // TODO: Use queueManager.goToNextSong()
     }
 
     @Override
@@ -105,6 +112,7 @@ public class PlaybackManager implements Playback.Callback {
     @Override
     public void setCurrentMediaId(String mediaId) {
         // TODO: Is this necessary?
+        Log.d(TAG, "setCurrentMediaId was called, but no logic is in it");
     }
 
     private class MediaSessionCallback extends MediaSessionCompat.Callback {
@@ -150,9 +158,9 @@ public class PlaybackManager implements Playback.Callback {
 
         stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime());
 
-        MediaItem currentMedia = exoPlayback.getCurrentPlaying();
+        MediaSessionCompat.QueueItem currentMedia = queueManager.getCurrentMusic();
         if (currentMedia != null) {
-            stateBuilder.setActiveQueueItemId(Long.parseLong(currentMedia.mediaId)); // TODO: This may not be working, currentMedia should be a QueueItem
+            stateBuilder.setActiveQueueItemId(currentMedia.getQueueId());
         }
 
         playbackService.onPlaybackStateUpdated(stateBuilder.build());

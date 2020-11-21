@@ -20,6 +20,7 @@ import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
 import com.google.android.exoplayer2.MediaItem;
+import com.musicplayah.Playback.ExoPlayback;
 import com.musicplayah.Playback.PlaybackManager;
 
 import java.util.ArrayList;
@@ -41,8 +42,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     public static final String CMD_NAME = "CMD_NAME";
     public static final String CMD_PAUSE = "CMD_PAUSE";
 
-    public ArrayList<MediaBrowserCompat.MediaItem> tracks; // TODO: Create a QueueManager
-
     public MediaPlaybackService() {
         Log.d(TAG, "MediaPlaybackService constructed!");
     }
@@ -61,23 +60,56 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         mediaSession.setPlaybackState(stateBuilder.build());
         Log.d(TAG, "Inside MediaPlaybackService onCreate");
 
-        playbackManager = new PlaybackManager(this, getApplicationContext(), musicProvider);
+        Context context = getApplicationContext();
+
+        QueueManager queueManager = new QueueManager(musicProvider, getResources(), context, new QueueManager.MetadataUpdateListener() {
+            @Override
+            public void onMetadataChanged(MediaMetadataCompat metadata) {
+                Log.d(TAG, "MetadataUpdateListener onMetadataChanged");
+            }
+
+            @Override
+            public void onMetadataRetrieveError() {
+                Log.d(TAG, "MetadataUpdateListener onMetadataRetrieveError");
+
+            }
+
+            @Override
+            public void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue) {
+                Log.d(TAG, "MetadataUpdateListener onQueueUpdated");
+
+            }
+
+            @Override
+            public void onNowPlayingChanged(MediaSessionCompat.QueueItem nowPlaying) {
+                Log.d(TAG, "MetadataUpdateListener onNowPlayingChanged");
+
+            }
+
+            @Override
+            public void onPauseRequest() {
+                Log.d(TAG, "MetadataUpdateListener onPauseRequest");
+
+            }
+        });
+
+        ExoPlayback playback = new ExoPlayback(this, musicProvider);
+
+        playbackManager = new PlaybackManager(this, context, musicProvider, queueManager, playback);
 
         mediaSession.setCallback(playbackManager.getMediaSessionCallback());
 
         setSessionToken(mediaSession.getSessionToken());
 
-        Context context = getApplicationContext();
-
         Intent intent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT); // 99 is the request code
         mediaSession.setSessionActivity(pendingIntent);
 
-        tracks = musicProvider.getAllSongs();
-
         playbackManager.updatePlaybackState();
 
         mediaNotificationManager = new MediaNotificationManager(this);
+
+        queueManager.fillRandomQueue();
     }
 
     @Override

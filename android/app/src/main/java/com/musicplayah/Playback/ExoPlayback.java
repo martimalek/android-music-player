@@ -5,8 +5,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
@@ -20,6 +22,8 @@ import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -28,6 +32,7 @@ import com.musicplayah.Receivers.BecomingNoisyReceiver;
 import com.musicplayah.Constants;
 import com.musicplayah.MediaPlaybackService;
 import com.musicplayah.MusicProvider;
+import android.support.v4.media.session.MediaSessionCompat;
 
 public class ExoPlayback implements Playback {
     private String TAG = Constants.TAG;
@@ -86,31 +91,39 @@ public class ExoPlayback implements Playback {
     }
 
     @Override
-    public void play(MediaItem item) {
+    public void play(MediaSessionCompat.QueueItem item) {
         Log.d(TAG, "Exoplayer play!");
         shouldPlayOnFocusGain = true;
         tryToGetAudioFocus();
         registerNoisyReceiver();
 
-        boolean hasMediaChanged = !item.mediaId.equals(currentMediaId);
-        if (hasMediaChanged) currentMediaId = item.mediaId;
+        String mediaId = item.getDescription().getMediaId();
+        assert mediaId != null;
+        boolean hasMediaChanged = mediaId.equals(currentMediaId);
+        if (hasMediaChanged) currentMediaId = mediaId;
 
         Log.d(TAG, "Has media changed ? " + hasMediaChanged);
 
         if (hasMediaChanged || exoPlayer == null) {
             releaseResources(false);
+
+            MediaMetadataCompat track = musicProvider.getTrackById(mediaId);
+            String mediaUri = track.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI); // TODO: Is this useless ???
+
+            String source = track.getString(MusicProvider.CUSTOM_METADATA_TRACK_SOURCE); // TODO: Is this useless ???
+            if (source != null) source = source.replaceAll(" ", "%20");
+
             if (exoPlayer == null) {
                 exoPlayer = new SimpleExoPlayer.Builder(context).build();
                 exoPlayer.addListener(eventListener);
             }
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.CONTENT_TYPE_MUSIC)
-                    .build();
 
-            exoPlayer.setAudioAttributes(audioAttributes);
+            exoPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.CONTENT_TYPE_MUSIC)
+                .build());
 
-            MediaItem mediaItem = mapToExoMediaItem(musicProvider.getTrackById(item.mediaId));
+            MediaItem mediaItem = mapToExoMediaItem(track);
 
             DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, "musicplayah"), null);
             ProgressiveMediaSource.Factory mediaFactory = new ProgressiveMediaSource.Factory(dataSourceFactory, new DefaultExtractorsFactory());
@@ -137,13 +150,14 @@ public class ExoPlayback implements Playback {
         this.callback = callback;
     }
 
-    public MediaItem mapToExoMediaItem(MediaBrowserCompat.MediaItem mediaItem) {
+    public MediaItem mapToExoMediaItem(MediaMetadataCompat mediaItem) {
         MediaMetadata metadata;
         try {
             metadata = new MediaMetadata.Builder()
                     .setTitle(mediaItem.getDescription().getTitle().toString())
                     .build();
         } catch (NullPointerException e) {
+            Log.d(TAG, "mapToExoMediaItem error catched!");
             metadata = new MediaMetadata.Builder()
                     .setTitle("") // No title
                     .build();

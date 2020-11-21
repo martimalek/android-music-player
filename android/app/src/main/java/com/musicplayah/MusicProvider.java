@@ -26,64 +26,11 @@ public class MusicProvider {
 
     private Context context;
 
+    public static String CUSTOM_METADATA_TRACK_SOURCE = "CUSTOM_METADATA_TRACK_SOURCE";
+
     public MusicProvider(Context context) {
         Log.d(TAG, "Inside MusicProvider constructor!");
         this.context = context;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public List<Audio> getAudioList() {
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-
-        String[] projection = {
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.DURATION,
-        };
-
-        Cursor audioCursor = context.getContentResolver().query(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                null,
-                MediaStore.Audio.Media.TITLE + " ASC");
-
-        Log.d(TAG, "Cursor created");
-
-        List<Audio> audios = new ArrayList<>();
-
-        try {
-            if (audioCursor != null && audioCursor.moveToFirst()) {
-                Log.d(TAG, "Cursor valid " + audioCursor.toString());
-
-                int idColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media._ID);
-                int artistColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-                int titleColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-                int dataColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-                int displayNameColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME);
-                int durationColumn = audioCursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
-
-                do {
-                    Audio audio = new Audio(
-                            audioCursor.getInt(idColumn),
-                            audioCursor.getString(artistColumn),
-                            audioCursor.getString(titleColumn),
-                            audioCursor.getString(dataColumn),
-                            audioCursor.getString(displayNameColumn),
-                            audioCursor.getInt(durationColumn)
-                    );
-                    audios.add(audio);
-                } while (audioCursor.moveToNext());
-
-                Log.d(TAG, "Size: " + String.valueOf(audios.size()));
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Exception occurred " + e.getMessage());
-        }
-        return audios;
     }
 
     public ArrayList<MediaBrowserCompat.MediaItem> getAllSongs() {
@@ -128,16 +75,6 @@ public class MusicProvider {
                         .setMediaUri(contentUri)
                         .build();
 
-//                MediaMetadata mediaMetadata = new MediaMetadata.Builder()
-//                        .setTitle(title)
-//                        .build();
-//
-//                mediaItem = new MediaItem.Builder()
-//                        .setMediaId(id)
-//                        .setUri(contentUri)
-//                        .setMediaMetadata(mediaMetadata)
-//                        .build();
-
                 mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
                 tracks.add(mediaItem);
             }
@@ -150,7 +87,7 @@ public class MusicProvider {
         return tracks;
     }
 
-    public MediaBrowserCompat.MediaItem getTrackById(String mediaId) {
+    public MediaMetadataCompat getTrackById(String mediaId) {
         Log.d(TAG, "getTrackById");
         final Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         final String _ID = MediaStore.Audio.Media._ID;
@@ -173,7 +110,7 @@ public class MusicProvider {
         ContentResolver cr = context.getContentResolver();
         Cursor tracksCursor =  cr.query(uri, cursorColumns, selection, selectionArgs, orderby);
 
-        MediaBrowserCompat.MediaItem mediaItem = null;
+        MediaMetadataCompat mediaItem = null;
 
         try {
             while (tracksCursor.moveToNext()) {
@@ -181,10 +118,9 @@ public class MusicProvider {
                 long longId = tracksCursor.getLong(0);
                 String title= tracksCursor.getString(1);
                 String artist = tracksCursor.getString(2);
-                String artist_id = tracksCursor.getString(3);
-                String album = tracksCursor.getString(4);
-                Long durationInMs = tracksCursor.getLong(5);
-                Long trackNo = tracksCursor.getLong(6);
+                String album = tracksCursor.getString(3);
+                Long durationInMs = tracksCursor.getLong(4);
+                Long trackNumber = tracksCursor.getLong(5);
                 Uri contentUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, longId);
                 Log.d(TAG, "Track " + id + " uri= " + contentUri.toString());
                 MediaDescriptionCompat mediaDescription = new MediaDescriptionCompat.Builder()
@@ -194,17 +130,18 @@ public class MusicProvider {
                         .setMediaUri(contentUri)
                         .build();
 
-//                MediaMetadata mediaMetadata = new MediaMetadata.Builder()
-//                        .setTitle(title)
-//                        .build();
-//
-//                mediaItem = new MediaItem.Builder()
-//                        .setMediaId(id)
-//                        .setUri(contentUri)
-//                        .setMediaMetadata(mediaMetadata)
-//                        .build();
+                Uri trackUri = ContentUris.withAppendedId(
+                        android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
 
-                mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
+                mediaItem = new MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, id)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationInMs) // in ms
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, trackNumber)
+                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, trackUri.toString())
+                        .build();
             }
         } finally {
             tracksCursor.close();
@@ -215,5 +152,22 @@ public class MusicProvider {
         } else Log.d(TAG, "MediaItem not found");
 
         return mediaItem;
+    }
+
+    public MediaMetadataCompat getRandomSongFromAllSongsOnDevice() {
+        long randomSongId = 0;
+
+        ContentResolver resolver = context.getContentResolver();
+        Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+
+        String[] projection = { MediaStore.Audio.Media._ID };
+
+        Cursor musicCursor = resolver.query(musicUri, projection, null, null, "RANDOM() LIMIT 1");
+        if (musicCursor != null && musicCursor.moveToFirst()) {
+            randomSongId = musicCursor.getLong(musicCursor.getColumnIndex(MediaStore.Audio.Media._ID));
+            musicCursor.close();
+        }
+
+        return getTrackById(Long.toString(randomSongId));
     }
 }
