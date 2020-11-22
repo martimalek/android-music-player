@@ -70,19 +70,11 @@ public class QueueManager {
         {
             List<MediaSessionCompat.QueueItem> newTracks = getRandomQueue(musicProvider, 10); // Same ?
 
-            // Add the new songs (we do this in loop below)
-            // mPlayingQueue.addAll(newTracks);
-
-            Log.d(TAG, "ADDING " +  newTracks.size() + " NEW SONGS TO DB");
-            for (MediaSessionCompat.QueueItem item: newTracks) {
-                playingQueue.add(item);
-//                int order = playingQueue.size();
-//                QueuedSong qs = new QueuedSong(0, order, 0, item.getDescription().getMediaId());
-//                LogHelper.i(TAG, "ADDING SONG TO DB, order = ", order, " desc= ", item.getDescription().getMediaId());
-//                mQueuedSongRepository.insertQueuedSong(qs);
-            }
-
+            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
+            playingQueue.addAll(newTracks);
         }
+
+        if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
 
         listener.onQueueUpdated("AlbumTitle", playingQueue);
     }

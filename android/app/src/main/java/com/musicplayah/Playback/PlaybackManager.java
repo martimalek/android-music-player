@@ -39,15 +39,14 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public void handlePlayRequest() {
-        Log.d(TAG, "Handling Play request!");
+        Log.d(TAG, "Handling Play request!" + queueManager.toString());
 
         MediaSessionCompat.QueueItem currentItem = queueManager.getCurrentMusic();
 
-//        MediaItem item = exoPlayback.isPlaying() ? exoPlayback.getCurrentPlaying() : mapToExoMediaItem(playbackService.tracks.get(0));
-
-        Log.d(TAG, "Current item => " + currentItem.getDescription().getMediaId());
+        Log.d(TAG, "currentItem => " + currentItem);
 
         if (currentItem != null) {
+            Log.d(TAG, "Current item => " + currentItem.getDescription().getMediaId());
             playbackService.onPlaybackStart();
             exoPlayback.play(currentItem);
         }
@@ -118,6 +117,7 @@ public class PlaybackManager implements Playback.Callback {
     private class MediaSessionCallback extends MediaSessionCompat.Callback {
         @Override
         public void onPlay() {
+            if (queueManager.getCurrentMusic() == null) queueManager.fillRandomQueue();
             handlePlayRequest();
         }
 

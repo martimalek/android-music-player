@@ -3,11 +3,10 @@ package com.musicplayah;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.media.browse.MediaBrowser;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -17,13 +16,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
-import androidx.media.session.MediaButtonReceiver;
 
-import com.google.android.exoplayer2.MediaItem;
 import com.musicplayah.Playback.ExoPlayback;
 import com.musicplayah.Playback.PlaybackManager;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class MediaPlaybackService extends MediaBrowserServiceCompat implements PlaybackManager.PlaybackServiceCallback {
@@ -42,9 +40,9 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     public static final String CMD_NAME = "CMD_NAME";
     public static final String CMD_PAUSE = "CMD_PAUSE";
 
-    public MediaPlaybackService() {
-        Log.d(TAG, "MediaPlaybackService constructed!");
-    }
+    private static final String HISTORY_PARENT_ID = "HISTORY";
+
+    private ArrayList<MediaItem> historyList = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -66,30 +64,34 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             @Override
             public void onMetadataChanged(MediaMetadataCompat metadata) {
                 Log.d(TAG, "MetadataUpdateListener onMetadataChanged");
+                addItemToHistory(metadata);
+                notifyChildrenChanged(HISTORY_PARENT_ID);
+                mediaSession.setMetadata(metadata);
             }
 
             @Override
             public void onMetadataRetrieveError() {
                 Log.d(TAG, "MetadataUpdateListener onMetadataRetrieveError");
-
+                // Currently we are not handling errors, but we should do it
             }
 
             @Override
             public void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue) {
                 Log.d(TAG, "MetadataUpdateListener onQueueUpdated");
-
+                mediaSession.setQueue(newQueue); // Is this doing anything?
+                mediaSession.setQueueTitle(title); // Is this doing anything?
             }
 
             @Override
             public void onNowPlayingChanged(MediaSessionCompat.QueueItem nowPlaying) {
                 Log.d(TAG, "MetadataUpdateListener onNowPlayingChanged");
-
+                playbackManager.handlePlayRequest();
             }
 
             @Override
             public void onPauseRequest() {
                 Log.d(TAG, "MetadataUpdateListener onPauseRequest");
-
+                mediaSession.getController().getTransportControls().pause();
             }
         });
 
@@ -109,7 +111,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
         mediaNotificationManager = new MediaNotificationManager(this);
 
-        queueManager.fillRandomQueue();
+        queueManager.fillRandomQueue(); // TODO: Would
     }
 
     @Override
@@ -149,10 +151,10 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     }
 
     @Override
-    public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
+    public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaItem>> result) {
         Log.d(TAG, "MediaPlaybackService onLoadChildren HEREEEEEE");
 
-        ArrayList<MediaBrowserCompat.MediaItem> mediaItems = musicProvider.getAllSongs();
+        ArrayList<MediaItem> mediaItems = musicProvider.getAllSongs();
         result.sendResult(mediaItems);
     }
 
@@ -170,6 +172,23 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 //            MediaBrowserCompat.MediaItem mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, flags);
 //            mediaItems.add(mediaItem);
 //    }
+
+    private void addItemToHistory(MediaMetadataCompat metadata) {
+        int historySize = 8;
+        MediaItem mediaItem = new MediaItem(metadata.getDescription(), MediaItem.FLAG_PLAYABLE);
+        historyList.add(0, mediaItem);
+        if (historyList.size() > historySize) {
+            int index = 0;
+            Iterator<MediaItem> iterator = historyList.iterator();
+            while (iterator.hasNext()) {
+                iterator.next();
+                if (index++ > historySize) {
+                    Log.d(TAG, "Removing item from history");
+                    iterator.remove();
+                }
+            }
+        }
+    }
 
     @Override
     public void onPlaybackStart() {
