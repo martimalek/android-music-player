@@ -28,6 +28,7 @@ class AudioManager {
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
     static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
     static ON_AUDIO_RESUMED = NativeModules.AudioManager.ON_AUDIO_RESUMED;
+    static ON_CHILDREN_UPDATED = NativeModules.AudioManager.ON_CHILDREN_UPDATED;
 }
 
 export default AudioManager;

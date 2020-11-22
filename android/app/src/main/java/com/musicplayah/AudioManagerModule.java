@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -21,7 +22,9 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
+import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 
@@ -71,8 +74,31 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         public void onConnected() {
             Log.d(TAG, "onConnected");
             connectToSession(mediaBrowser.getSessionToken());
+            subscribeToChildrenChanges();
         }
     };
+
+    private void subscribeToChildrenChanges() {
+        Log.d(TAG, "Subscribed to children changes!");
+
+        try {
+            String root = mediaBrowser.getRoot();
+            mediaBrowser.subscribe(root, new MediaBrowserCompat.SubscriptionCallback() {
+                @Override
+                public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children) {
+                    Log.d(TAG, "CHILDREN LOADED!");
+                    if (children == null || children.isEmpty()) {
+                        Log.d(TAG, "children is f*cking empty T.T");
+                        return;
+                    }
+                    Log.d(TAG, "There are " + children.size() + " children!");
+                    sendChildrenToReact(children);
+                }
+            });
+        } catch (Exception e) {
+            Log.d(TAG, "Error while subscribing to children " + e.getMessage());
+        }
+    }
 
     private void connectToSession(MediaSessionCompat.Token token) {
         Log.d(TAG, "connectToSession");
@@ -127,8 +153,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         } else Log.d(TAG, "Permissions already granted!");
     }
 
-    // TODO: Subscribe to mediaBrowser onChildrenLoaded
-
     private MediaControllerCompat getMediaController() {
         Activity activity = getCurrentActivity();
         if (activity != null) return MediaControllerCompat.getMediaController(activity);
@@ -168,6 +192,36 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         }
     }
 
+    private void sendChildrenToReact(List<MediaBrowserCompat.MediaItem> updatedChildren) {
+        Log.d(TAG, "Sending children to react");
+        WritableArray childrenArray = new WritableNativeArray();
+
+        Log.d(TAG, "Example of child " + updatedChildren.get(0).getDescription().toString());
+
+        for (MediaBrowserCompat.MediaItem child: updatedChildren) {
+            WritableMap map = new WritableNativeMap();
+
+            MediaDescriptionCompat description = child.getDescription();
+
+            map.putString("id", description.getMediaId());
+            CharSequence title = description.getTitle();
+            if (title != null) map.putString("title", title.toString());
+            else map.putNull("title");
+
+            CharSequence subtitle = description.getSubtitle();
+            if (subtitle != null && !subtitle.toString().equals("<unknown>")) map.putString("subtitle", subtitle.toString());
+            else map.putNull("subtitle");
+
+//            map.putString("artist", this.artist);
+//            map.putString("data", this.data);
+//            map.putString("displayName", this.displayName);
+//            map.putInt("duration", this.duration);
+
+            childrenArray.pushMap(map);
+        }
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.CHILDREN_UPDATED_EVENT, childrenArray);
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @ReactMethod
     public void getAudios(Promise promise) {
@@ -201,6 +255,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         constants.put(Constants.AUDIO_ENDED_EVENT, Constants.AUDIO_ENDED_EVENT);
         constants.put(Constants.AUDIO_PAUSED_EVENT, Constants.AUDIO_PAUSED_EVENT);
         constants.put(Constants.AUDIO_RESUMED_EVENT, Constants.AUDIO_RESUMED_EVENT);
+        constants.put(Constants.CHILDREN_UPDATED_EVENT, Constants.CHILDREN_UPDATED_EVENT);
         return constants;
     }
 }

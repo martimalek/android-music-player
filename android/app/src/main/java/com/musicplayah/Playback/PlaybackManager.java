@@ -13,6 +13,8 @@ import com.musicplayah.Constants;
 import com.musicplayah.MediaPlaybackService;
 import com.musicplayah.MusicProvider;
 
+import java.util.List;
+
 public class PlaybackManager implements Playback.Callback {
     private static String TAG = Constants.TAG;
 
@@ -64,16 +66,28 @@ public class PlaybackManager implements Playback.Callback {
         updatePlaybackState();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void handleSkipToNext() {
+        Log.d(TAG, "Skipping to next");
+        if (queueManager.goToNextSong()) handlePlayRequest();
+        else handleStopRequest(); // Skipping is impossible
+        queueManager.updateMetadata();
+    }
+
     public MediaSessionCompat.Callback getMediaSessionCallback() {
         return mediaSessionCallback;
     }
 
+    public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
+        return queueManager.getCurrentQueue();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCompletion() {
         // TODO: Handle track end logic, like play next or stop playing and go to sleep
         Log.d(TAG, "Track ended, should we play another one?");
-
-        // TODO: Use queueManager.goToNextSong()
+        handleSkipToNext();
     }
 
     @Override
@@ -84,6 +98,7 @@ public class PlaybackManager implements Playback.Callback {
     @Override
     public void onError(String error) {
         // TODO: Should we handle errors?
+        Log.d(TAG, "Unhandled error! " + error);
     }
 
     @Override
@@ -113,10 +128,7 @@ public class PlaybackManager implements Playback.Callback {
         @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onSkipToNext() {
-            Log.d(TAG, "Skipping to next");
-            if (queueManager.goToNextSong()) handlePlayRequest();
-            else handleStopRequest(); // Skipping is impossible
-            queueManager.updateMetadata();
+            handleSkipToNext();
         }
     }
 

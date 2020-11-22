@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.preference.PreferenceManager;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
@@ -42,7 +43,7 @@ public class QueueManager {
         currentPlayingItem = null;
     }
 
-    private List<MediaSessionCompat.QueueItem> getCurrentQueue() {
+    public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
             return playingQueue;
     }
 
@@ -63,6 +64,25 @@ public class QueueManager {
         Log.d(TAG, "getRandomQueue: result.size=" + result.size());
 
         return convertToQueue(result);
+    }
+
+    public void fillQueueWithAllSongs() {
+        int currentQueueSize = playingQueue.size();
+        Log.d(TAG, "fillRandomQueue, current size = " + playingQueue.size());
+
+        if (currentQueueSize < 10) // TODO: Should this value come from somewhere ??
+        {
+            ArrayList<MediaBrowserCompat.MediaItem> allSongsOnDevice = musicProvider.getAllSongs(); // this should be ArrayList<MediaMetadataCompat>
+
+//            List<MediaSessionCompat.QueueItem> newTracks = convertToQueue(allSongsOnDevice); // TODO: Uncomment and make necessary change for this to work
+//
+//            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
+//            playingQueue.addAll(newTracks);
+        }
+
+        if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
+
+        listener.onQueueUpdated("AlbumTitle", playingQueue);
     }
 
     public void fillRandomQueue() {

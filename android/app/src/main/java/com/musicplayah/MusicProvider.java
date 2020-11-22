@@ -33,7 +33,7 @@ public class MusicProvider {
         this.context = context;
     }
 
-    public ArrayList<MediaBrowserCompat.MediaItem> getAllSongs() {
+    public ArrayList<MediaBrowserCompat.MediaItem> getAllSongs() { // change return type to ArrayList<MediaMetadataCompat>
         Log.d(TAG, "Getting all songs...");
         final Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 

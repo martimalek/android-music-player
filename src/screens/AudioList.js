@@ -17,10 +17,13 @@ export const AudioList = () => {
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_ENDED, handleAudioEnd);
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_PAUSED, handleAudioStopped);
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_RESUMED, handleAudioResumed);
+        DeviceEventEmitter.addListener(AudioManager.ON_CHILDREN_UPDATED, handleChildrenUpdate);
 
         return () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_PAUSED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_RESUMED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_CHILDREN_UPDATED);
         }
     }, []);
 
@@ -30,6 +33,8 @@ export const AudioList = () => {
 
     const handleAudioStopped = () => setIsPlaying(false);
     const handleAudioResumed = () => setIsPlaying(true);
+
+    const handleChildrenUpdate = (updatedChildren) => setSongs(updatedChildren);
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
@@ -73,6 +78,7 @@ export const AudioList = () => {
         <SafeAreaView style={styles.container}>
             <Text style={styles.title}>MUSIC</Text>
             <FlatList
+                style={styles.list}
                 data={songs}
                 renderItem={renderItem}
                 keyExtractor={({ id }) => `song-${id}`}
@@ -98,6 +104,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    list: {
+        marginBottom: 30,
     },
     itemText: {
         color: 'white',
