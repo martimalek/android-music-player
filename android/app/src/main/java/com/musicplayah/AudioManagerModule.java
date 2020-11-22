@@ -106,7 +106,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
             @Override
             public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
-                Log.d(TAG, "Queue changed!");
+                Log.d(TAG, "Queue changed! Size => " + queue.size());
             }
         };
 

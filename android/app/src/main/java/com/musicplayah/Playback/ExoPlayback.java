@@ -110,10 +110,10 @@ public class ExoPlayback implements Playback {
             releaseResources(false);
 
             MediaMetadataCompat track = musicProvider.getTrackById(mediaId);
-            String mediaUri = track.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI); // TODO: Is this useless ???
-
-            String source = track.getString(MusicProvider.CUSTOM_METADATA_TRACK_SOURCE); // TODO: Is this useless ???
-            if (source != null) source = source.replaceAll(" ", "%20");
+//            String mediaUri = track.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI); // TODO: Is this useless ???
+//
+//            String source = track.getString(MusicProvider.CUSTOM_METADATA_TRACK_SOURCE); // TODO: Is this useless ???
+//            if (source != null) source = source.replaceAll(" ", "%20");
 
             if (exoPlayer == null) {
                 exoPlayer = new SimpleExoPlayer.Builder(context).build();

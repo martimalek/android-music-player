@@ -150,13 +150,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
     }
 
     private PendingIntent createContentIntent(MediaDescriptionCompat description) {
-//        Intent openUI = new Intent(service, MainActivity.class);
-//        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//        openUI.putExtra(MainActivity.START_FULLSCREEN, true);
-//        if (description != null) {
-//            openUI.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
-//        }
-
         Intent resultIntent = new Intent(service, MainActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         resultIntent.putExtra(MainActivity.START_FULLSCREEN, true);

@@ -83,7 +83,9 @@ public class QueueManager {
     }
 
     public boolean goToNextSong() {
+        Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
         if (playingQueue.size() > 0) {
+            Log.d(TAG, "");
             currentPlayingItem = playingQueue.remove(0);
             // In case the queue is random this should add an extra song to it
             return true;
