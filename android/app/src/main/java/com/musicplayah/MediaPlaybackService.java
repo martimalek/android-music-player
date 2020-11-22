@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -19,6 +18,7 @@ import androidx.media.MediaBrowserServiceCompat;
 
 import com.musicplayah.Playback.ExoPlayback;
 import com.musicplayah.Playback.PlaybackManager;
+import com.musicplayah.Playback.QueueManager;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -111,7 +111,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
         mediaNotificationManager = new MediaNotificationManager(this);
 
-        queueManager.fillRandomQueue(); // TODO: Would
+        queueManager.fillRandomQueue(); // TODO: Would prefer fillQueueWithAllSongs (Alphabetically by title?)
     }
 
     @Override

@@ -3,19 +3,15 @@ package com.musicplayah.Playback;
 import android.content.Context;
 import android.os.Build;
 import android.os.SystemClock;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.MediaMetadata;
 import com.musicplayah.Constants;
 import com.musicplayah.MediaPlaybackService;
 import com.musicplayah.MusicProvider;
-import com.musicplayah.QueueManager;
 
 public class PlaybackManager implements Playback.Callback {
     private static String TAG = Constants.TAG;
@@ -68,24 +64,6 @@ public class PlaybackManager implements Playback.Callback {
         updatePlaybackState();
     }
 
-    private MediaItem mapToExoMediaItem(MediaBrowserCompat.MediaItem mediaItem) {
-        MediaMetadata metadata;
-        try {
-            metadata = new MediaMetadata.Builder()
-                    .setTitle(mediaItem.getDescription().getTitle().toString())
-                    .build();
-        } catch (NullPointerException e) {
-            metadata = new MediaMetadata.Builder()
-                    .setTitle("") // No title
-                    .build();
-        }
-
-        return new MediaItem.Builder()
-                .setUri(mediaItem.getDescription().getMediaUri())
-                .setMediaMetadata(metadata)
-                .build();
-    }
-
     public MediaSessionCompat.Callback getMediaSessionCallback() {
         return mediaSessionCallback;
     }
@@ -132,6 +110,14 @@ public class PlaybackManager implements Playback.Callback {
             handleStopRequest();
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        @Override
+        public void onSkipToNext() {
+            Log.d(TAG, "Skipping to next");
+            if (queueManager.goToNextSong()) handlePlayRequest();
+            else handleStopRequest(); // Skipping is impossible
+            queueManager.updateMetadata();
+        }
     }
 
     private long getAvailableActions() {
@@ -145,6 +131,7 @@ public class PlaybackManager implements Playback.Callback {
         return actions;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void updatePlaybackState() {
         Log.d(TAG, "Updating playback state");
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;

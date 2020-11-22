@@ -98,8 +98,10 @@ public class ExoPlayback implements Playback {
         registerNoisyReceiver();
 
         String mediaId = item.getDescription().getMediaId();
+        Log.d(TAG, "current mediaId " + currentMediaId);
+        Log.d(TAG, "new mediaId " + mediaId);
         assert mediaId != null;
-        boolean hasMediaChanged = mediaId.equals(currentMediaId);
+        boolean hasMediaChanged = !mediaId.equals(currentMediaId);
         if (hasMediaChanged) currentMediaId = mediaId;
 
         Log.d(TAG, "Has media changed ? " + hasMediaChanged);

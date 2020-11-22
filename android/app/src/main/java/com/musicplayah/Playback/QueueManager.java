@@ -1,4 +1,4 @@
-package com.musicplayah;
+package com.musicplayah.Playback;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,6 +7,9 @@ import android.preference.PreferenceManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
+
+import com.musicplayah.Constants;
+import com.musicplayah.MusicProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,6 +80,34 @@ public class QueueManager {
         if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
 
         listener.onQueueUpdated("AlbumTitle", playingQueue);
+    }
+
+    public boolean goToNextSong() {
+        if (playingQueue.size() > 0) {
+            currentPlayingItem = playingQueue.remove(0);
+            // In case the queue is random this should add an extra song to it
+            return true;
+        }
+        return false;
+    }
+
+    public void updateMetadata() {
+        Log.d(TAG, "Updating queue metadata");
+        MediaSessionCompat.QueueItem currentMusic = getCurrentMusic();
+        if (currentMusic == null) {
+            listener.onMetadataRetrieveError();
+            return;
+        }
+
+        final String mediaId = currentMusic.getDescription().getMediaId();
+        MediaMetadataCompat metadata = musicProvider.getTrackById(mediaId);
+        if (metadata == null) throw new IllegalArgumentException("Invalid mediaId " + mediaId);
+
+        listener.onMetadataChanged(metadata);
+        listener.onQueueUpdated("AlbumTitle", playingQueue);
+
+        // handle artwork change (metadata.getDescription().getIconBitmap())
+
     }
 
     public static int count = 0;

@@ -59,8 +59,9 @@ export const AudioList = () => {
     const handleSongToggle = AudioManager.toggle;
 
     const handleNext = () => {
-        if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);
-        else playSong(0);
+        // if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);
+        // else playSong(0);
+        AudioManager.playNext();
     };
 
     const handlePrev = () => {

@@ -129,22 +129,42 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
     // TODO: Subscribe to mediaBrowser onChildrenLoaded
 
+    private MediaControllerCompat getMediaController() {
+        Activity activity = getCurrentActivity();
+        if (activity != null) return MediaControllerCompat.getMediaController(activity);
+        return null;
+    }
+
     @ReactMethod
     public void toggle() {
         Log.d(TAG, "Toggling...");
 
-        Activity activity = getCurrentActivity();
-        if (activity != null) {
-            MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(activity);
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) {
             Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
             if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
                 mediaController.getTransportControls().pause();
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
-            }
-            else {
+            } else {
                 mediaController.getTransportControls().play();
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_RESUMED_EVENT, true);
             }
+        }
+    }
+
+    @ReactMethod
+    public void playNext() {
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) {
+            mediaController.getTransportControls().skipToNext();
+        }
+    }
+
+    @ReactMethod
+    public void playPrevious() {
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) {
+            mediaController.getTransportControls().skipToPrevious();
         }
     }
 
