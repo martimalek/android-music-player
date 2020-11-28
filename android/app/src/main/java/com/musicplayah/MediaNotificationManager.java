@@ -210,7 +210,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 //            return null; //  TODO: Uncomment once metadata is correctly handled
         }
 
-        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_DEFAULT);
+        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_LOW);
 
         chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -239,7 +239,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
                         .setShowActionsInCompactView(toggleButtonPosition)
                         .setMediaSession(sessionToken))
                 .setOnlyAlertOnce(true)
-                .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
+                .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
