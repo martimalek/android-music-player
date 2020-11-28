@@ -49,14 +49,17 @@ public class PlaybackManager implements Playback.Callback {
             Log.d(TAG, "Current item => " + currentItem.getDescription().getMediaId());
             playbackService.onPlaybackStart();
             exoPlayback.play(currentItem);
+            queueManager.updateMetadata();
         }
     }
 
     public void handlePauseRequest() {
         Log.d(TAG, "Handling Pause request!");
         if (exoPlayback.isPlaying()) {
+            Log.d(TAG, "isPlaying");
             exoPlayback.pause();
             playbackService.onPlaybackStop();
+            queueManager.updateMetadata();
         }
     }
 
@@ -66,6 +69,7 @@ public class PlaybackManager implements Playback.Callback {
         exoPlayback.stop();
         playbackService.onPlaybackStop();
         updatePlaybackState();
+        queueManager.updateMetadata();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -95,7 +99,6 @@ public class PlaybackManager implements Playback.Callback {
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onCompletion() {
-        // TODO: Handle track end logic, like play next or stop playing and go to sleep
         Log.d(TAG, "Track ended, should we play another one?");
         handleSkipToNext();
     }
@@ -176,9 +179,7 @@ public class PlaybackManager implements Playback.Callback {
     public void updatePlaybackState() {
         Log.d(TAG, "Updating playback state");
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
-        if (exoPlayback != null && exoPlayback.isConnected()) {
-            position = exoPlayback.getCurrentPosition();
-        }
+        if (exoPlayback != null && exoPlayback.isConnected()) position = exoPlayback.getCurrentPosition();
 
         PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder().setActions(getAvailableActions());
 
@@ -187,9 +188,7 @@ public class PlaybackManager implements Playback.Callback {
         stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime());
 
         MediaSessionCompat.QueueItem currentMedia = queueManager.getCurrentMusic();
-        if (currentMedia != null) {
-            stateBuilder.setActiveQueueItemId(currentMedia.getQueueId());
-        }
+        if (currentMedia != null) stateBuilder.setActiveQueueItemId(currentMedia.getQueueId());
 
         playbackService.onPlaybackStateUpdated(stateBuilder.build());
 

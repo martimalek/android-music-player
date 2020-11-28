@@ -323,9 +323,33 @@ public class ExoPlayback implements Playback {
             Log.d(TAG, "Error on exoPlayer " + error.getMessage());
         }
 
+//        @Override
+//        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+//            Log.d(TAG, "Inside deprecated onPlayerStateChanged");
+//            switch (playbackState) {
+//                case ExoPlayer.STATE_IDLE:
+//                case ExoPlayer.STATE_BUFFERING:
+//                case ExoPlayer.STATE_READY:
+//                    if (callback != null) callback.onPlaybackStatusChanged(getState());
+//                    break;
+//                case ExoPlayer.STATE_ENDED:
+//                    // The media player finished playing the current song.
+//                    if (callback != null) callback.onCompletion();
+//                    break;
+//            }
+//        }
+
         @Override
-        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-            Log.d(TAG, "Inside deprecated onPlayerStateChanged");
+        public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
+            Log.d(TAG, "Play when ready changed => " + playWhenReady);
+            if (callback != null) callback.onPlaybackStatusChanged(getState()); // TODO: This seems to work but not clear why
+        }
+
+        //
+        @Override
+        public void onPlaybackStateChanged(int playbackState) {
+            Log.d(TAG, "Inside onPlaybackStateChanged " + playbackState);
+
             switch (playbackState) {
                 case ExoPlayer.STATE_IDLE:
                 case ExoPlayer.STATE_BUFFERING:
@@ -338,27 +362,5 @@ public class ExoPlayback implements Playback {
                     break;
             }
         }
-
-//        @Override
-//        public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
-//            Log.d(TAG, "Play when ready changed");
-//        }
-//
-//        @Override
-//        public void onPlaybackStateChanged(int state) {
-//            Log.d(TAG, "Inside onPlaybackStateChanged " + state);
-//
-//            switch (state) {
-//                case ExoPlayer.STATE_IDLE:
-//                case ExoPlayer.STATE_BUFFERING:
-//                case ExoPlayer.STATE_READY:
-//                    if (callback != null) callback.onPlaybackStatusChanged(getState());
-//                    break;
-//                case ExoPlayer.STATE_ENDED:
-//                    // The media player finished playing the current song.
-//                    if (callback != null) callback.onCompletion();
-//                    break;
-//            }
-//        }
     }
 }
