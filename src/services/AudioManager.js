@@ -5,10 +5,6 @@ class AudioManager {
         return NativeModules.AudioManager.init();
     }
 
-    static async getAudios() {
-        return NativeModules.AudioManager.getAudios();
-    }
-
     static playSpecific(path) {
         NativeModules.AudioManager.playAudio(path);
     }
@@ -23,6 +19,10 @@ class AudioManager {
 
     static playPrevious() {
         NativeModules.AudioManager.playPrevious();
+    }
+
+    static async playFromQueuePosition(position) {
+        return NativeModules.AudioManager.playFromQueuePosition(position);
     }
 
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;

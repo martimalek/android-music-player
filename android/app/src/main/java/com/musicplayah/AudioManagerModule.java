@@ -127,7 +127,10 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
 
             @Override
             public void onPlaybackStateChanged(PlaybackStateCompat state) {
-                Log.d(TAG, "State changed!");
+                Log.d(TAG, "State changed! " + state.getState());
+                int currentState = state.getState();
+                if (currentState == PlaybackStateCompat.STATE_PLAYING) reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_RESUMED_EVENT, true);
+                else if (currentState == PlaybackStateCompat.STATE_PAUSED) reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
             }
 
             @Override
@@ -159,39 +162,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         return null;
     }
 
-    @ReactMethod
-    public void toggle() {
-        Log.d(TAG, "Toggling...");
-
-        MediaControllerCompat mediaController = getMediaController();
-        if (mediaController != null) {
-            Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
-            if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
-                mediaController.getTransportControls().pause();
-                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_PAUSED_EVENT, true);
-            } else {
-                mediaController.getTransportControls().play();
-                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.AUDIO_RESUMED_EVENT, true);
-            }
-        }
-    }
-
-    @ReactMethod
-    public void playNext() {
-        MediaControllerCompat mediaController = getMediaController();
-        if (mediaController != null) {
-            mediaController.getTransportControls().skipToNext();
-        }
-    }
-
-    @ReactMethod
-    public void playPrevious() {
-        MediaControllerCompat mediaController = getMediaController();
-        if (mediaController != null) {
-            mediaController.getTransportControls().skipToPrevious();
-        }
-    }
-
     private void sendChildrenToReact(List<MediaBrowserCompat.MediaItem> updatedChildren) {
         Log.d(TAG, "Sending children to react");
         WritableArray childrenArray = new WritableNativeArray();
@@ -212,32 +182,46 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
             if (subtitle != null && !subtitle.toString().equals("<unknown>")) map.putString("subtitle", subtitle.toString());
             else map.putNull("subtitle");
 
-//            map.putString("artist", this.artist);
-//            map.putString("data", this.data);
-//            map.putString("displayName", this.displayName);
-//            map.putInt("duration", this.duration);
-
             childrenArray.pushMap(map);
         }
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.CHILDREN_UPDATED_EVENT, childrenArray);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     @ReactMethod
-    public void getAudios(Promise promise) {
-        WritableArray audioArray = new WritableNativeArray();
+    public void toggle() {
+        Log.d(TAG, "Toggling...");
 
-//        List<Audio> audios = getAudioList();
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) {
+            Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
+            if (mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) mediaController.getTransportControls().pause();
+            else mediaController.getTransportControls().play();
+        }
+    }
 
+    @ReactMethod
+    public void playNext() {
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) mediaController.getTransportControls().skipToNext();
+    }
+
+    @ReactMethod
+    public void playPrevious() {
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) mediaController.getTransportControls().skipToPrevious();
+    }
+
+    @ReactMethod
+    public void playFromQueuePosition(int queueItem, Promise promise) {
+        Log.d(TAG, "Should play a song from queue position " + queueItem);
         try {
-//            for (Audio audio: audios) {
-//                audioArray.pushMap(audio.toMap());
-//            }
-
-            promise.resolve(audioArray);
+            MediaControllerCompat mediaController = getMediaController();
+            Log.d(TAG, "BEFORE");
+            if (mediaController != null) mediaController.getTransportControls().skipToQueueItem(queueItem);
+            Log.d(TAG, "AFTER");
+            promise.resolve(true);
         } catch (Exception e) {
-            promise.reject("E_AUDIO", "Could not get audios");
-            Log.d(TAG, "Exception while parsing " + e.getMessage());
+            promise.reject("MEDIA_NOT_FOUND", "The specified media could not be found in the current queue");
         }
     }
 

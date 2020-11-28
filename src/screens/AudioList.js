@@ -34,26 +34,24 @@ export const AudioList = () => {
     const handleAudioStopped = () => setIsPlaying(false);
     const handleAudioResumed = () => setIsPlaying(true);
 
-    const handleChildrenUpdate = (updatedChildren) => setSongs(updatedChildren);
+    const handleChildrenUpdate = setSongs;
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
         setHasAudioEnded(true);
     };
 
-    const playSong = (index) => {
+    const playSong = async (index) => {
         if (hasAudioEnded) setHasAudioEnded(false);
-        setSelectedSong(index);
-        setIsPlaying(true);
-        AudioManager.playSpecific(songs[index].data);
+        try {
+            await AudioManager.playFromQueuePosition(index);
+            setSelectedSong(index);
+        } catch (err) {
+            // Handle error
+        }
     };
 
-    const init = async () => {
-        await AudioManager.init();
-        // if (isInitialized) getSongs();
-    };
-
-    const getSongs = async () => setSongs(await AudioManager.getAudios());
+    const init = async () => AudioManager.init();
 
     const renderItem = ({ item: { title }, index }) => (
         <TouchableOpacity style={{ ...styles.item, ...(index === selectedSong ? styles.selected : {}) }} onPress={() => playSong(index)}>
@@ -61,18 +59,19 @@ export const AudioList = () => {
         </TouchableOpacity>
     );
 
-    const handleSongToggle = AudioManager.toggle;
+    const handleSongToggle = () => {
+        if (selectedSong == null) setSelectedSong(0);
+        AudioManager.toggle();
+    };
 
     const handleNext = () => {
-        // if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);
-        // else playSong(0);
+        if (!selectedSong) setSelectedSong(1);
+        else if (selectedSong < songs.length - 1) setSelectedSong(selectedSong + 1);
+        else if (selectedSong === songs.length - 1) setSelectedSong(0);
         AudioManager.playNext();
     };
 
-    const handlePrev = () => {
-        if (selectedSong === 0) playSong(songs.length - 1);
-        else playSong(selectedSong - 1);
-    };
+    const handlePrev = AudioManager.playPrevious;
 
     return (
         <SafeAreaView style={styles.container}>

@@ -2,6 +2,7 @@ package com.musicplayah.Playback;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -74,6 +75,14 @@ public class PlaybackManager implements Playback.Callback {
         queueManager.updateMetadata();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void handleSkipToPrevious() {
+        Log.d(TAG, "Skipping to next");
+        if (queueManager.goToPreviousSong()) handlePlayRequest();
+        else handleStopRequest(); // Skipping is impossible
+        queueManager.updateMetadata();
+    }
+
     public MediaSessionCompat.Callback getMediaSessionCallback() {
         return mediaSessionCallback;
     }
@@ -110,7 +119,7 @@ public class PlaybackManager implements Playback.Callback {
     private class MediaSessionCallback extends MediaSessionCompat.Callback {
         @Override
         public void onPlay() {
-            if (queueManager.getCurrentMusic() == null) queueManager.fillRandomQueue();
+            if (queueManager.getCurrentMusic() == null) queueManager.fillQueueWithAllSongs();
             handlePlayRequest();
         }
 
@@ -129,6 +138,19 @@ public class PlaybackManager implements Playback.Callback {
         @Override
         public void onSkipToNext() {
             handleSkipToNext();
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        @Override
+        public void onSkipToPrevious() {
+            handleSkipToPrevious();
+        }
+
+        @Override
+        public void onSkipToQueueItem(long id) {
+            queueManager.setCurrentQueueItem(id);
+            queueManager.updateMetadata();
+            Log.d(TAG, "Skipping to queue item " + id);
         }
     }
 

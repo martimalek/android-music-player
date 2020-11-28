@@ -1,10 +1,7 @@
 package com.musicplayah.Playback;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.preference.PreferenceManager;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
@@ -38,7 +35,7 @@ public class QueueManager {
         this.context = context;
         this.listener = listener;
 
-        playingQueue = Collections.synchronizedList(new ArrayList<MediaSessionCompat.QueueItem>());
+        playingQueue = Collections.synchronizedList(new ArrayList<>());
 
         currentPlayingItem = null;
     }
@@ -68,21 +65,38 @@ public class QueueManager {
 
     public void fillQueueWithAllSongs() {
         int currentQueueSize = playingQueue.size();
-        Log.d(TAG, "fillRandomQueue, current size = " + playingQueue.size());
+        Log.d(TAG, "fillQueueWithAllSongs, current size = " + playingQueue.size());
 
         if (currentQueueSize < 10) // TODO: Should this value come from somewhere ??
         {
-            ArrayList<MediaBrowserCompat.MediaItem> allSongsOnDevice = musicProvider.getAllSongs(); // this should be ArrayList<MediaMetadataCompat>
+            ArrayList<MediaMetadataCompat> allSongsOnDevice = musicProvider.getAllSongs();
 
-//            List<MediaSessionCompat.QueueItem> newTracks = convertToQueue(allSongsOnDevice); // TODO: Uncomment and make necessary change for this to work
-//
-//            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
-//            playingQueue.addAll(newTracks);
+            List<MediaSessionCompat.QueueItem> newTracks = convertToQueue(allSongsOnDevice);
+
+            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
+            playingQueue.addAll(newTracks);
         }
 
         if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
 
         listener.onQueueUpdated("AlbumTitle", playingQueue);
+    }
+
+    public void setCurrentQueueItem(long queueId) {
+        int index = getItemIndexOnQueue(playingQueue, queueId);
+        if (index >= 0 && index < playingQueue.size()) {
+            currentPlayingItem = playingQueue.get(index);
+            listener.onNowPlayingChanged(currentPlayingItem);
+        }
+    }
+
+    public static int getItemIndexOnQueue(Iterable<MediaSessionCompat.QueueItem> queue, long queueId) {
+        int index = 0;
+        for (MediaSessionCompat.QueueItem item : queue) {
+            if (queueId == item.getQueueId()) return index;
+            index++;
+        }
+        return -1;
     }
 
     public void fillRandomQueue() {
@@ -105,9 +119,26 @@ public class QueueManager {
     public boolean goToNextSong() {
         Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
         if (playingQueue.size() > 0) {
-            Log.d(TAG, "");
-            currentPlayingItem = playingQueue.remove(0);
-            // In case the queue is random this should add an extra song to it
+            int index = getItemIndexOnQueue(playingQueue, currentPlayingItem.getQueueId());
+            if (index >= 0 && index <= playingQueue.size()) {
+                if (index < playingQueue.size()) {
+                    currentPlayingItem = playingQueue.get(index + 1);
+                } else currentPlayingItem = playingQueue.get(0);
+            } // TODO: else throw custom not found exception
+            return true;
+        }
+        return false;
+    }
+
+    public boolean goToPreviousSong() {
+        Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
+        if (playingQueue.size() > 0) {
+            int index = getItemIndexOnQueue(playingQueue, currentPlayingItem.getQueueId());
+            if (index >= 0 && index <= playingQueue.size()) {
+                if (index > 0) {
+                    currentPlayingItem = playingQueue.get(index - 1);
+                } else currentPlayingItem = playingQueue.get(playingQueue.size() - 1);
+            } // TODO: else throw custom not found exception
             return true;
         }
         return false;

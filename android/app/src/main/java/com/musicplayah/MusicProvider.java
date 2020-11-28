@@ -33,19 +33,17 @@ public class MusicProvider {
         this.context = context;
     }
 
-    public ArrayList<MediaBrowserCompat.MediaItem> getAllSongs() { // change return type to ArrayList<MediaMetadataCompat>
+    public ArrayList<MediaMetadataCompat> getAllSongs() { // change return type to ArrayList<MediaMetadataCompat>
         Log.d(TAG, "Getting all songs...");
         final Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-
         final String _ID = MediaStore.Audio.Media._ID;
         final String TITLE = MediaStore.Audio.Media.TITLE;
-        final String ARTIST = MediaStore.Audio.Media.ARTIST;
-        final String ARTIST_ID = MediaStore.Audio.Media.ARTIST_ID;
+        final String ARTIST = MediaStore.Audio.Albums.ARTIST;
         final String ALBUM = MediaStore.Audio.Albums.ALBUM;
         final String DURATION_IN_MS = MediaStore.Audio.Media.DURATION;
         final String TRACK_NO = MediaStore.Audio.Media.TRACK;
 
-        final String[] cursorColumns={_ID,TITLE, ARTIST, ARTIST_ID, ALBUM, DURATION_IN_MS, TRACK_NO};
+        final String[] cursorColumns={_ID,TITLE, ARTIST, ALBUM, DURATION_IN_MS, TRACK_NO};
         final String orderby = TITLE + " COLLATE NOCASE";
 
         String selection = null;
@@ -53,29 +51,32 @@ public class MusicProvider {
 
         ContentResolver cr = context.getContentResolver();
         Cursor tracksCursor =  cr.query(uri, cursorColumns, selection, selectionArgs, orderby);
-        ArrayList<MediaBrowserCompat.MediaItem> tracks = new ArrayList<>();
-        MediaBrowserCompat.MediaItem mediaItem;
+        ArrayList<MediaMetadataCompat> tracks = new ArrayList<>();
+
+        MediaMetadataCompat mediaItem = null;
 
         try {
             while (tracksCursor.moveToNext()) {
                 String id = tracksCursor.getString(0);
-                long longId = tracksCursor.getLong(0);
                 String title= tracksCursor.getString(1);
                 String artist = tracksCursor.getString(2);
-                String artist_id = tracksCursor.getString(3);
-                String album = tracksCursor.getString(4);
-                Long durationInMs = tracksCursor.getLong(5);
-                Long trackNo = tracksCursor.getLong(6);
-                Uri contentUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, longId);
-                Log.d(TAG, "Track " + id + " uri= " + contentUri.toString());
-                MediaDescriptionCompat mediaDescription = new MediaDescriptionCompat.Builder()
-                        .setTitle(title)
-                        .setSubtitle(artist)
-                        .setMediaId(id)
-                        .setMediaUri(contentUri)
+                String album = tracksCursor.getString(3);
+                Long durationInMs = tracksCursor.getLong(4);
+                Long trackNumber = tracksCursor.getLong(5);
+
+                Uri trackUri = ContentUris.withAppendedId(
+                        android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
+
+                mediaItem = new MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, id)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationInMs)
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                        .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, trackNumber)
+                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, trackUri.toString())
                         .build();
 
-                mediaItem = new MediaBrowserCompat.MediaItem(mediaDescription, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
                 tracks.add(mediaItem);
             }
         } finally {
@@ -115,20 +116,11 @@ public class MusicProvider {
         try {
             while (tracksCursor.moveToNext()) {
                 String id = tracksCursor.getString(0);
-                long longId = tracksCursor.getLong(0);
                 String title= tracksCursor.getString(1);
                 String artist = tracksCursor.getString(2);
                 String album = tracksCursor.getString(3);
                 Long durationInMs = tracksCursor.getLong(4);
                 Long trackNumber = tracksCursor.getLong(5);
-                Uri contentUri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, longId);
-                Log.d(TAG, "Track " + id + " uri= " + contentUri.toString());
-                MediaDescriptionCompat mediaDescription = new MediaDescriptionCompat.Builder()
-                        .setTitle(title)
-                        .setSubtitle(artist)
-                        .setMediaId(id)
-                        .setMediaUri(contentUri)
-                        .build();
 
                 Uri trackUri = ContentUris.withAppendedId(
                         android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
@@ -137,7 +129,7 @@ public class MusicProvider {
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, id)
                         .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
                         .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationInMs) // in ms
+                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationInMs)
                         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
                         .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, trackNumber)
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, trackUri.toString())

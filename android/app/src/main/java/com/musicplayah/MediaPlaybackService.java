@@ -115,7 +115,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
         mediaNotificationManager = new MediaNotificationManager(this);
 
-        queueManager.fillRandomQueue(); // TODO: Would prefer fillQueueWithAllSongs (Alphabetically by title?)
+        queueManager.fillQueueWithAllSongs();
     }
 
     @Override
