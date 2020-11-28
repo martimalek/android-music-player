@@ -16,10 +16,14 @@ export const AudioList = () => {
         init();
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_ENDED, handleAudioEnd);
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_PAUSED, handleAudioStopped);
+        DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_RESUMED, handleAudioResumed);
+        DeviceEventEmitter.addListener(AudioManager.ON_CHILDREN_UPDATED, handleChildrenUpdate);
 
         return () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_PAUSED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_RESUMED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_CHILDREN_UPDATED);
         }
     }, []);
 
@@ -28,25 +32,26 @@ export const AudioList = () => {
     }, [hasAudioEnded]);
 
     const handleAudioStopped = () => setIsPlaying(false);
+    const handleAudioResumed = () => setIsPlaying(true);
+
+    const handleChildrenUpdate = setSongs;
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
         setHasAudioEnded(true);
     };
 
-    const playSong = (index) => {
+    const playSong = async (index) => {
         if (hasAudioEnded) setHasAudioEnded(false);
-        setSelectedSong(index);
-        setIsPlaying(true);
-        AudioManager.playSpecific(songs[index].data);
+        try {
+            await AudioManager.playFromQueuePosition(index);
+            setSelectedSong(index);
+        } catch (err) {
+            // Handle error
+        }
     };
 
-    const init = async () => {
-        const isInitialized = await AudioManager.init();
-        if (isInitialized) getSongs();
-    };
-
-    const getSongs = async () => setSongs(await AudioManager.getAudios());
+    const init = async () => AudioManager.init();
 
     const renderItem = ({ item: { title }, index }) => (
         <TouchableOpacity style={{ ...styles.item, ...(index === selectedSong ? styles.selected : {}) }} onPress={() => playSong(index)}>
@@ -55,43 +60,35 @@ export const AudioList = () => {
     );
 
     const handleSongToggle = () => {
-        if (isPlaying) {
-            AudioManager.pause();
-            setIsPlaying(false);
-        } else {
-            if (selectedSong) AudioManager.play();
-            else AudioManager.playSpecific(songs[0].data);
-            setIsPlaying(true);
-        }
+        if (selectedSong == null) setSelectedSong(0);
+        AudioManager.toggle();
     };
 
     const handleNext = () => {
-        if (selectedSong !== songs.length - 1) playSong(selectedSong + 1);
-        else playSong(0);
+        if (!selectedSong) setSelectedSong(1);
+        else if (selectedSong < songs.length - 1) setSelectedSong(selectedSong + 1);
+        else if (selectedSong === songs.length - 1) setSelectedSong(0);
+        AudioManager.playNext();
     };
 
-    const handlePrev = () => {
-        if (selectedSong === 0) playSong(songs.length - 1);
-        else playSong(selectedSong - 1);
-    };
+    const handlePrev = AudioManager.playPrevious;
 
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.title}>MUSIC</Text>
             <FlatList
+                style={styles.list}
                 data={songs}
                 renderItem={renderItem}
                 keyExtractor={({ id }) => `song-${id}`}
             />
-            {(selectedSong !== null) && (
-                <AudioControls
-                    isPlaying={isPlaying}
-                    duration={songs[selectedSong].duration}
-                    onToggle={handleSongToggle}
-                    onNext={handleNext}
-                    onPrev={handlePrev}
-                />
-            )}
+            <AudioControls
+                isPlaying={isPlaying}
+                duration={140000}
+                onToggle={handleSongToggle}
+                onNext={handleNext}
+                onPrev={handlePrev}
+            />
         </SafeAreaView>
     );
 };
@@ -106,6 +103,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    list: {
+        marginBottom: 30,
     },
     itemText: {
         color: 'white',

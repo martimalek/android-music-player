@@ -10,6 +10,10 @@ public class Constants {
 
     public static String AUDIO_ENDED_EVENT = "ON_AUDIO_ENDED";
     public static String AUDIO_PAUSED_EVENT = "ON_AUDIO_PAUSED";
+    public static String AUDIO_RESUMED_EVENT = "ON_AUDIO_RESUMED";
+    public static String CHILDREN_UPDATED_EVENT = "ON_CHILDREN_UPDATED";
+
+    public static String PERMISSION_OBSERVER_KEY = "PERMISSION_OBSERVER_KEY";
 
 }
 

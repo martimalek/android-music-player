@@ -5,27 +5,31 @@ class AudioManager {
         return NativeModules.AudioManager.init();
     }
 
-    static async getAudios() {
-        return NativeModules.AudioManager.getAudios();
-    }
-
     static playSpecific(path) {
         NativeModules.AudioManager.playAudio(path);
     }
 
-    static play() {
-        NativeModules.AudioManager.play();
+    static toggle() {
+        NativeModules.AudioManager.toggle();
     }
 
-    static pause() {
-        NativeModules.AudioManager.pause();
+    static playNext() {
+        NativeModules.AudioManager.playNext();
+    }
+
+    static playPrevious() {
+        NativeModules.AudioManager.playPrevious();
+    }
+
+    static async playFromQueuePosition(position) {
+        return NativeModules.AudioManager.playFromQueuePosition(position);
     }
 
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
     static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
+    static ON_AUDIO_RESUMED = NativeModules.AudioManager.ON_AUDIO_RESUMED;
+    static ON_CHILDREN_UPDATED = NativeModules.AudioManager.ON_CHILDREN_UPDATED;
 }
-
-console.log(NativeModules.AudioManager)
 
 export default AudioManager;
 
