@@ -1,6 +1,7 @@
 package com.musicplayah.Playback;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -151,6 +152,12 @@ public class PlaybackManager implements Playback.Callback {
             queueManager.setCurrentQueueItem(id);
             queueManager.updateMetadata();
             Log.d(TAG, "Skipping to queue item " + id);
+        }
+
+        @Override
+        public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+            Log.d(TAG, "New mediaButtonEvent " + mediaButtonEvent);
+            return super.onMediaButtonEvent(mediaButtonEvent);
         }
     }
 

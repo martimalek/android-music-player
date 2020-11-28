@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.media.session.MediaButtonReceiver;
 
 public class MediaNotificationManager extends BroadcastReceiver {
     String TAG = Constants.TAG;
@@ -52,8 +53,12 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private boolean hasStarted = false;
 
-    public MediaNotificationManager(MediaPlaybackService service) {
+    private Context context;
+
+    public MediaNotificationManager(MediaPlaybackService service, Context context) {
         this.service = service;
+        this.context = context;
+
         updateSessionToken();
 
         notificationManager = NotificationManagerCompat.from(service);
@@ -187,7 +192,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         @Override
         public void onMetadataChanged(MediaMetadataCompat newMetadata) {
             metadata = newMetadata;
-            Log.d(TAG, "Updating metadata");
+            Log.d(TAG, "Updating metadata " + newMetadata);
             Notification notification = createNotification();
             if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
         }
@@ -207,7 +212,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_DEFAULT);
 
-        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
         assert manager != null;
         manager.createNotificationChannel(chan);
@@ -229,9 +234,10 @@ public class MediaNotificationManager extends BroadcastReceiver {
         CharSequence subtitle = "Song artist";
 
         Notification notification = builder.setOngoing(true)
+                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(toggleButtonPosition)
-                .setMediaSession(sessionToken))
+                        .setShowActionsInCompactView(toggleButtonPosition)
+                        .setMediaSession(sessionToken))
                 .setOnlyAlertOnce(true)
                 .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
                 .setCategory(Notification.CATEGORY_SERVICE)

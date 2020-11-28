@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
+import androidx.media.session.MediaButtonReceiver;
 
 import com.musicplayah.Playback.ExoPlayback;
 import com.musicplayah.Playback.PlaybackManager;
@@ -76,14 +77,14 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             @Override
             public void onMetadataRetrieveError() {
                 Log.d(TAG, "MetadataUpdateListener onMetadataRetrieveError");
-                // Currently we are not handling errors, but we should do it
+                // Currently not handling errors, but should do it
             }
 
             @Override
             public void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue) {
                 Log.d(TAG, "MetadataUpdateListener onQueueUpdated");
-                mediaSession.setQueue(newQueue); // Is this doing anything?
-                mediaSession.setQueueTitle(title); // Is this doing anything?
+                mediaSession.setQueue(newQueue);
+                mediaSession.setQueueTitle(title);
             }
 
             @Override
@@ -113,7 +114,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
         playbackManager.updatePlaybackState();
 
-        mediaNotificationManager = new MediaNotificationManager(this);
+        mediaNotificationManager = new MediaNotificationManager(this, context);
 
         queueManager.fillQueueWithAllSongs();
     }
@@ -127,7 +128,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             if (ACTION_CMD.equals(action)) {
                 if (CMD_PAUSE.equals(command)) playbackManager.handlePauseRequest();
             } else {
-//                MediaButtonReceiver.handleIntent(mediaSession, intent); // TODO: Uncomment once media button receiver is done
+                MediaButtonReceiver.handleIntent(mediaSession, intent);
             }
         }
 

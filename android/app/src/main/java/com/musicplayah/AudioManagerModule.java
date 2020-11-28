@@ -3,7 +3,9 @@ package com.musicplayah;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -17,6 +19,8 @@ import android.util.Pair;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import com.facebook.react.bridge.ActivityEventListener;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -31,13 +35,14 @@ import com.facebook.react.modules.core.PermissionAwareActivity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Observer;
 
 import static com.musicplayah.Constants.PERMISSION_OBSERVER_KEY;
 import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
 import static com.musicplayah.Constants.permissions;
 
-public class AudioManagerModule extends ReactContextBaseJavaModule {
+public class AudioManagerModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private static ReactApplicationContext reactContext;
     private static String TAG = Constants.TAG;
 
@@ -67,6 +72,8 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         };
 
         permissionManager.isPermissionGranted.addObserver(permissionObserver);
+
+        reactContext.addLifecycleEventListener(this);
     }
 
     private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
@@ -241,5 +248,24 @@ public class AudioManagerModule extends ReactContextBaseJavaModule {
         constants.put(Constants.AUDIO_RESUMED_EVENT, Constants.AUDIO_RESUMED_EVENT);
         constants.put(Constants.CHILDREN_UPDATED_EVENT, Constants.CHILDREN_UPDATED_EVENT);
         return constants;
+    }
+
+    @Override
+    public void onHostResume() {
+        Log.d(TAG, "onHostResume");
+        Objects.requireNonNull(reactContext.getCurrentActivity()).setVolumeControlStream(AudioManager.STREAM_MUSIC);
+    }
+
+    @Override
+    public void onHostPause() {
+        Log.d(TAG, "onHostPause");
+    }
+
+    @Override
+    public void onHostDestroy() {
+        Log.d(TAG, "onHostDestroy");
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) mediaController.unregisterCallback(controllerCallback);
+        mediaBrowser.disconnect();
     }
 }
