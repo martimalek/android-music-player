@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.media.session.MediaButtonReceiver;
 
 public class MediaNotificationManager extends BroadcastReceiver {
     String TAG = Constants.TAG;
@@ -52,8 +53,12 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private boolean hasStarted = false;
 
-    public MediaNotificationManager(MediaPlaybackService service) {
+    private Context context;
+
+    public MediaNotificationManager(MediaPlaybackService service, Context context) {
         this.service = service;
+        this.context = context;
+
         updateSessionToken();
 
         notificationManager = NotificationManagerCompat.from(service);
@@ -153,9 +158,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         Intent resultIntent = new Intent(service, MainActivity.class);
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         resultIntent.putExtra(MainActivity.START_FULLSCREEN, true);
-        if (description != null) {
-            resultIntent.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
-        }
+        if (description != null) resultIntent.putExtra(MainActivity.MEDIA_DESCRIPTION, description);
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(service);
         stackBuilder.addNextIntentWithParentStack(resultIntent);
@@ -187,7 +190,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         @Override
         public void onMetadataChanged(MediaMetadataCompat newMetadata) {
             metadata = newMetadata;
-            Log.d(TAG, "Updating metadata");
+            Log.d(TAG, "Updating metadata " + newMetadata);
             Notification notification = createNotification();
             if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
         }
@@ -198,16 +201,13 @@ public class MediaNotificationManager extends BroadcastReceiver {
         Log.d(TAG, "Creating notification...");
 
         if (metadata == null || playbackState == null) {
-            Log.d(TAG, "Something is null");
-            if (metadata == null) {
-                Log.d(TAG, "metadata is null");
-            }
-//            return null; //  TODO: Uncomment once metadata is correctly handled
+            Log.d(TAG, "THERE IS NO METADATA!!!!");
+            return null;
         }
 
-        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_DEFAULT);
+        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_LOW);
 
-        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
         assert manager != null;
         manager.createNotificationChannel(chan);
@@ -225,22 +225,22 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) builder.addAction(R.drawable.ic_skip_next_white_24dp, service.getString(R.string.label_next), nextIntent);
 
-        CharSequence title = "Song title";
-        CharSequence subtitle = "Song artist";
+        MediaDescriptionCompat description = metadata.getDescription();
 
         Notification notification = builder.setOngoing(true)
+                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(toggleButtonPosition)
-                .setMediaSession(sessionToken))
+                        .setShowActionsInCompactView(toggleButtonPosition)
+                        .setMediaSession(sessionToken))
                 .setOnlyAlertOnce(true)
-                .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
+                .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setUsesChronometer(true)
-                .setContentIntent(createContentIntent(null)) // TODO: Pass description here!!
-                .setContentTitle(title) // description.getTitle()
-                .setContentText(subtitle) // description.getSubtitle()
+                .setContentIntent(createContentIntent(description))
+                .setContentTitle(description.getTitle())
+                .setContentText(description.getSubtitle())
                 .build();
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(service);
@@ -272,6 +272,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
         Log.d(TAG, "NotificationManager setNotificationPlaybackState");
 
         if (playbackState == null || !hasStarted) {
+            Log.d(TAG, "NotificationManager Stopping...");
             service.stopForeground(true);
             return;
         }
@@ -286,5 +287,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
 
         builder.setOngoing(playbackState.getState() == PlaybackStateCompat.STATE_PLAYING);
+        Log.d(TAG, "NotificationManager setNotificationPlaybackState finish");
     }
 }
