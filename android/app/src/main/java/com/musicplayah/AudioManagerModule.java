@@ -3,10 +3,8 @@ package com.musicplayah;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
-import android.os.Build;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -17,9 +15,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 
-import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -177,6 +173,8 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
         for (MediaBrowserCompat.MediaItem child: updatedChildren) {
             WritableMap map = new WritableNativeMap();
+
+            Log.d(TAG, "Error may be here (2)" + child);
 
             MediaDescriptionCompat description = child.getDescription();
 

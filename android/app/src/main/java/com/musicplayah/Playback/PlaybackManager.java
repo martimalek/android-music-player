@@ -3,7 +3,6 @@ package com.musicplayah.Playback;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -105,7 +104,9 @@ public class PlaybackManager implements Playback.Callback {
 
     @Override
     public void onPlaybackStatusChanged(int state) {
-        updatePlaybackState();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            updatePlaybackState();
+        }
     }
 
     @Override
