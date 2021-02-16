@@ -27,6 +27,8 @@ public class PlaybackManager implements Playback.Callback {
     private QueueManager queueManager;
     private ExoPlayback exoPlayback;
 
+    PlaybackStateCompat.Builder stateBuilder;
+
     public PlaybackManager(MediaPlaybackService playbackService, Context context, MusicProvider musicProvider, QueueManager queueManager, ExoPlayback playback) {
         Log.d(TAG, "Inside PlaybackManager constructor!");
         this.mediaSessionCallback = new MediaSessionCallback();
@@ -58,7 +60,7 @@ public class PlaybackManager implements Playback.Callback {
         if (exoPlayback.isPlaying()) {
             Log.d(TAG, "isPlaying");
             exoPlayback.pause();
-            playbackService.onPlaybackStop();
+            updatePlaybackState();
             queueManager.updateMetadata();
         }
     }
@@ -181,7 +183,7 @@ public class PlaybackManager implements Playback.Callback {
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
         if (exoPlayback != null && exoPlayback.isConnected()) position = exoPlayback.getCurrentPosition();
 
-        PlaybackStateCompat.Builder stateBuilder = new PlaybackStateCompat.Builder().setActions(getAvailableActions());
+        stateBuilder = new PlaybackStateCompat.Builder().setActions(getAvailableActions());
 
         int state = exoPlayback.getState();
 

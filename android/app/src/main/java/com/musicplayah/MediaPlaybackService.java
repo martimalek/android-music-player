@@ -125,9 +125,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             String command = intent.getStringExtra(CMD_NAME);
             if (ACTION_CMD.equals(action)) {
                 if (CMD_PAUSE.equals(command)) playbackManager.handlePauseRequest();
-            } else {
-                MediaButtonReceiver.handleIntent(mediaSession, intent);
-            }
+            } else MediaButtonReceiver.handleIntent(mediaSession, intent);
         }
 
 //        mDelayedStopHandler.removeCallbacksAndMessages(null);

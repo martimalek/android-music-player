@@ -76,6 +76,10 @@ public class MediaNotificationManager extends BroadcastReceiver {
         builder = new NotificationCompat.Builder(service, CHANNEL_ID);
 
         notificationManager.cancelAll();
+
+        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_LOW);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        notificationManager.createNotificationChannel(chan);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -89,6 +93,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
             if (notification != null) {
                 Log.d(TAG, "Notification " + notification.toString());
+                notificationManager.notify(NOTIFICATION_ID, notification);
                 mediaController.registerCallback(controllerCallback);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_PLAY);
@@ -122,8 +127,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "Received notificationManager");
         final String action = intent.getAction();
+        Log.d(TAG, "Received notificationManager " + action);
 
         switch (action) {
             case ACTION_PAUSE:
@@ -213,13 +218,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
             return null;
         }
 
-        NotificationChannel chan = new NotificationChannel(CHANNEL_ID, "MusicPlayahChannel", NotificationManager.IMPORTANCE_LOW);
-
-        chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        NotificationManager manager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
-        assert manager != null;
-        manager.createNotificationChannel(chan);
-
         int toggleButtonPosition = 0;
 
         if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) != 0) {
@@ -235,7 +233,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         setNotificationPlaybackState(builder);
 
-        Notification notification = builder
+        return builder
                 .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                         .setShowActionsInCompactView(toggleButtonPosition)
@@ -250,10 +248,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .build();
-
-        notificationManager.notify(NOTIFICATION_ID, notification);
-
-        return notification;
     }
 
     @SuppressLint("RestrictedApi")
@@ -288,17 +282,14 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         setNotificationPlaybackState(builder);
 
-        Notification notification = builder
+        return builder
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                         .setShowActionsInCompactView(toggleButtonPosition))
                 .setContentIntent(createContentIntent(description))
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .build();
-
-        notificationManager.notify(NOTIFICATION_ID, notification);
-
-        return notification;
     }
 
     private void addPlayPauseAction(NotificationCompat.Builder builder) {
@@ -320,15 +311,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
     }
 
     private void setNotificationPlaybackState(NotificationCompat.Builder builder) {
-        Log.d(TAG, "NotificationManager setNotificationPlaybackState");
+        boolean isOngoing = playbackState.getState() == PlaybackStateCompat.STATE_PLAYING;
+        Log.d(TAG, "NotificationManager setNotificationPlaybackState " + isOngoing);
 
-//        if (playbackState == null || !hasStarted) {
-//            Log.d(TAG, "NotificationManager Stopping..." + builder);
-//            Log.d(TAG, "playbackState => " + playbackState + " hasStarted => " + hasStarted);
-//            service.stopForeground(true);
-//            return;
-//        }
-
-        builder.setOngoing(playbackState.getState() == PlaybackStateCompat.STATE_PLAYING);
+        builder.setOngoing(isOngoing);
     }
 }
