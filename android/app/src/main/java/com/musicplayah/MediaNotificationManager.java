@@ -1,5 +1,6 @@
 package com.musicplayah;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -25,7 +26,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.media.session.MediaButtonReceiver;
 
 public class MediaNotificationManager extends BroadcastReceiver {
-    String TAG = Constants.TAG;
+    String TAG = Constants.TAG + "_NOTIFICATION";
 
     private static final int NOTIFICATION_ID = 412;
     private static final int REQUEST_CODE = 100;
@@ -55,6 +56,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private Context context;
 
+    private NotificationCompat.Builder builder;
+
     public MediaNotificationManager(MediaPlaybackService service, Context context) {
         this.service = service;
         this.context = context;
@@ -70,6 +73,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
         previousIntent = PendingIntent.getBroadcast(service, REQUEST_CODE, new Intent(ACTION_PREV).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
         nextIntent = PendingIntent.getBroadcast(service, REQUEST_CODE, new Intent(ACTION_NEXT).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
 
+        builder = new NotificationCompat.Builder(service, CHANNEL_ID);
+
         notificationManager.cancelAll();
     }
 
@@ -78,7 +83,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
         if (!hasStarted) {
             Log.d(TAG, "Starting notification");
             metadata = mediaController.getMetadata();
-            Log.d(TAG, "metadata " + metadata);
             playbackState = mediaController.getPlaybackState();
 
             Notification notification = createNotification();
@@ -163,7 +167,10 @@ public class MediaNotificationManager extends BroadcastReceiver {
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(service);
         stackBuilder.addNextIntentWithParentStack(resultIntent);
 
-        return stackBuilder.getPendingIntent(REQUEST_CODE, PendingIntent.FLAG_CANCEL_CURRENT);
+        return stackBuilder.getPendingIntent(REQUEST_CODE, PendingIntent.FLAG_UPDATE_CURRENT);
+//        PendingIntent pendingIntent = PendingIntent.getActivity(context, REQUEST_CODE, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+//
+//        return pendingIntent;
     }
 
     private final MediaControllerCompat.Callback controllerCallback = new MediaControllerCompat.Callback() {
@@ -181,7 +188,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             Log.d(TAG, "Notification new state " + state);
             if (state.getState() == PlaybackStateCompat.STATE_STOPPED || state.getState() == PlaybackStateCompat.STATE_NONE) stopNotification();
             else {
-                Notification notification = createNotification();
+                Notification notification = updateNotification();
                 if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
             }
         }
@@ -191,7 +198,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
         public void onMetadataChanged(MediaMetadataCompat newMetadata) {
             metadata = newMetadata;
             Log.d(TAG, "Updating metadata " + newMetadata);
-            Notification notification = createNotification();
+
+            Notification notification = updateNotification();
             if (notification != null) notificationManager.notify(NOTIFICATION_ID, notification);
         }
     };
@@ -212,7 +220,58 @@ public class MediaNotificationManager extends BroadcastReceiver {
         assert manager != null;
         manager.createNotificationChannel(chan);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(service, CHANNEL_ID);
+        int toggleButtonPosition = 0;
+
+        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) != 0) {
+            builder.addAction(R.drawable.ic_skip_previous_white_24dp, service.getString(R.string.label_previous), previousIntent);
+            toggleButtonPosition = 1;
+        }
+
+        addPlayPauseAction(builder);
+
+        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) builder.addAction(R.drawable.ic_skip_next_white_24dp, service.getString(R.string.label_next), nextIntent);
+
+        MediaDescriptionCompat description = metadata.getDescription();
+
+        setNotificationPlaybackState(builder);
+
+        Notification notification = builder
+                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
+                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
+                        .setShowActionsInCompactView(toggleButtonPosition)
+                        .setMediaSession(sessionToken))
+                .setOnlyAlertOnce(true)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setUsesChronometer(false)
+                .setShowWhen(false)
+                .setContentIntent(createContentIntent(description))
+                .setContentTitle(description.getTitle())
+                .setContentText(description.getSubtitle())
+                .build();
+
+        notificationManager.notify(NOTIFICATION_ID, notification);
+
+        return notification;
+    }
+
+    @SuppressLint("RestrictedApi")
+    NotificationCompat.Extender clearActionsExtender = builder -> {
+        builder.mActions.clear(); // Seems that there is not a better approach...
+        return builder;
+    };
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private Notification updateNotification() {
+        Log.d(TAG, "Updating notification..." + builder);
+
+        if (metadata == null || playbackState == null) {
+            Log.d(TAG, "THERE IS NO METADATA!!!!");
+            return null;
+        }
+
+        builder.extend(clearActionsExtender); // clear actions to recreate them
 
         int toggleButtonPosition = 0;
 
@@ -227,26 +286,17 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         MediaDescriptionCompat description = metadata.getDescription();
 
-        Notification notification = builder.setOngoing(true)
-                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(context, PlaybackStateCompat.ACTION_STOP))
+        setNotificationPlaybackState(builder);
+
+        Notification notification = builder
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(toggleButtonPosition)
-                        .setMediaSession(sessionToken))
-                .setOnlyAlertOnce(true)
-                .setPriority(NotificationManager.IMPORTANCE_LOW)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .setSmallIcon(R.drawable.ic_notification)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setUsesChronometer(true)
+                        .setShowActionsInCompactView(toggleButtonPosition))
                 .setContentIntent(createContentIntent(description))
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .build();
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(service);
         notificationManager.notify(NOTIFICATION_ID, notification);
-
-        setNotificationPlaybackState(builder);
 
         return notification;
     }
@@ -256,13 +306,14 @@ public class MediaNotificationManager extends BroadcastReceiver {
         String label;
         int icon;
         PendingIntent intent;
+
         if (playbackState.getState() == PlaybackStateCompat.STATE_PLAYING) {
-            label = service.getString(R.string.label_pause);
             icon = R.drawable.uamp_ic_pause_white_24dp;
+            label = service.getString(R.string.label_pause);
             intent = pauseIntent;
         } else {
-            label = service.getString(R.string.label_play);
             icon = R.drawable.uamp_ic_play_arrow_white_24dp;
+            label = service.getString(R.string.label_play);
             intent = playIntent;
         }
         builder.addAction(new NotificationCompat.Action(icon, label, intent));
@@ -271,22 +322,13 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private void setNotificationPlaybackState(NotificationCompat.Builder builder) {
         Log.d(TAG, "NotificationManager setNotificationPlaybackState");
 
-        if (playbackState == null || !hasStarted) {
-            Log.d(TAG, "NotificationManager Stopping...");
-            service.stopForeground(true);
-            return;
-        }
-        if (playbackState.getState() == PlaybackStateCompat.STATE_PLAYING && playbackState.getPosition() >= 0) {
-            builder.setWhen(System.currentTimeMillis() - playbackState.getPosition())
-                    .setShowWhen(true)
-                    .setUsesChronometer(true);
-        } else {
-            builder.setWhen(0)
-                    .setShowWhen(false)
-                    .setUsesChronometer(false);
-        }
+//        if (playbackState == null || !hasStarted) {
+//            Log.d(TAG, "NotificationManager Stopping..." + builder);
+//            Log.d(TAG, "playbackState => " + playbackState + " hasStarted => " + hasStarted);
+//            service.stopForeground(true);
+//            return;
+//        }
 
         builder.setOngoing(playbackState.getState() == PlaybackStateCompat.STATE_PLAYING);
-        Log.d(TAG, "NotificationManager setNotificationPlaybackState finish");
     }
 }
