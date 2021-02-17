@@ -46,7 +46,7 @@ public class MusicProvider {
         final String[] cursorColumns={_ID,TITLE, ARTIST, ALBUM, DURATION_IN_MS, TRACK_NO};
         final String orderby = TITLE + " COLLATE NOCASE";
 
-        String selection = null;
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";;
         String[] selectionArgs = null;
 
         ContentResolver cr = context.getContentResolver();
