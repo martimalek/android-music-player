@@ -120,11 +120,12 @@ public class QueueManager {
         Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
         if (playingQueue.size() > 0) {
             int index = getItemIndexOnQueue(playingQueue, currentPlayingItem.getQueueId());
-            if (index >= 0 && index <= playingQueue.size()) {
-                if (index < playingQueue.size()) {
+            Log.d(TAG, "Index " + index + " queue size " +  playingQueue.size());
+            if (index >= 0 && index <= (playingQueue.size() - 1)) {
+                if (index < (playingQueue.size() - 1)) {
                     currentPlayingItem = playingQueue.get(index + 1);
                 } else currentPlayingItem = playingQueue.get(0);
-            } // TODO: else throw custom not found exception
+            }
             return true;
         }
         return false;

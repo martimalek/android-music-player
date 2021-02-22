@@ -3,6 +3,7 @@ import { DeviceEventEmitter, Dimensions, FlatList, StyleSheet, Text, TouchableOp
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AudioControls } from '../components/AudioControls';
+import { AudioItem } from '../components/AudioItem';
 
 import AudioManager from '../services/AudioManager';
 
@@ -54,9 +55,12 @@ export const AudioList = () => {
     const init = async () => AudioManager.init();
 
     const renderItem = ({ item: { title }, index }) => (
-        <TouchableOpacity style={{ ...styles.item, ...(index === selectedSong ? styles.selected : {}) }} onPress={() => playSong(index)}>
-            <Text style={styles.itemText}>{title}</Text>
-        </TouchableOpacity>
+        <AudioItem
+            style={{ ...(index === selectedSong ? styles.selected : {}) }}
+            onPress={() => playSong(index)}
+            title={title}
+            onSwipeRight={() => console.log('Do something incredible! ', index)}
+        />
     );
 
     const handleSongToggle = () => {
@@ -71,7 +75,11 @@ export const AudioList = () => {
         AudioManager.playNext();
     };
 
-    const handlePrev = AudioManager.playPrevious;
+    const handlePrev = () => {
+        if (selectedSong > 0) setSelectedSong(selectedSong - 1);
+        else if (selectedSong === 0) setSelectedSong(songs.length - 1);
+        AudioManager.playPrevious();
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -105,7 +113,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     list: {
-        marginBottom: 30,
+        marginBottom: 110,
     },
     itemText: {
         color: 'white',

@@ -233,6 +233,11 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     }
 
     @ReactMethod
+    public void addSongToAlternativeQueue() {
+
+    }
+
+    @ReactMethod
     public void init(Promise promise) {
         Log.d(TAG, "Initializing service...");
         initialPromise = promise;
