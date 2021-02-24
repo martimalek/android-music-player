@@ -3,25 +3,38 @@ import { StyleSheet, Text, TouchableOpacity, Animated, PanResponder } from 'reac
 
 export const AudioItem = ({ title, style, onSwipeRight, ...props }) => {
     const pan = useRef(new Animated.ValueXY()).current;
+    const isPannable = useRef(true);
+
+    const handleSwipeRight = () => {
+        isPannable.current = false;
+        onSwipeRight();
+    };
 
     const panResponder = useRef(PanResponder.create({
-        onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (evt, gestureState) => {
+            const { dx, dy } = gestureState
+            return dx > 2 || dx < -2 || dy > 2 || dy < -2
+        },
         onPanResponderGrant: () => { pan.setValue({ x: 0, y: 0 }) },
         onPanResponderMove: (e, g) => {
+            if (!isPannable.current) return;
             if (g.dx > 0) {
-                Animated.event(
-                    [
-                        null,
-                        { dx: pan.x._value < 0 ? new Animated.Value(0) : pan.x }
-                    ],
-                    { useNativeDriver: false },
-                )(e, g);
+                if (g.dx > 100) handleSwipeRight();
+                else {
+                    Animated.event(
+                        [
+                            null,
+                            { dx: pan.x._value < 0 ? new Animated.Value(0) : pan.x }
+                        ],
+                        { useNativeDriver: false },
+                    )(e, g);
+                }
             }
         },
         onPanResponderRelease: (e, g) => {
             pan.flattenOffset();
             pan.setValue({ x: 0, y: 0 });
-            if (g.dx > 100) onSwipeRight();
+            isPannable.current = true;
         },
     })).current;
 
