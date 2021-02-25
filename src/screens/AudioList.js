@@ -52,6 +52,10 @@ export const AudioList = () => {
         }
     };
 
+    const onItemSwipeRight = async (index) => {
+        await AudioManager.addSongToSelectedQueueByPosition(index);
+    }
+
     const init = async () => AudioManager.init();
 
     const renderItem = ({ item: { title }, index }) => (
@@ -59,7 +63,7 @@ export const AudioList = () => {
             style={{ ...(index === selectedSong ? styles.selected : {}) }}
             onPress={() => playSong(index)}
             title={title}
-            onSwipeRight={() => console.log('Do something incredible! ', index)}
+            onSwipeRight={() => onItemSwipeRight(index)}
         />
     );
 

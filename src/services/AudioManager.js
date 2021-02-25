@@ -25,6 +25,10 @@ class AudioManager {
         return NativeModules.AudioManager.playFromQueuePosition(position);
     }
 
+    static async addSongToSelectedQueueByPosition(position) {
+        return NativeModules.AudioManager.addSongToSelectedQueueByPosition(position);
+    }
+
     static ON_AUDIO_ENDED = NativeModules.AudioManager.ON_AUDIO_ENDED;
     static ON_AUDIO_PAUSED = NativeModules.AudioManager.ON_AUDIO_PAUSED;
     static ON_AUDIO_RESUMED = NativeModules.AudioManager.ON_AUDIO_RESUMED;

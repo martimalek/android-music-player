@@ -105,6 +105,7 @@ public class PlaybackManager implements Playback.Callback {
         handleSkipToNext();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPlaybackStatusChanged(int state) {
         updatePlaybackState();
@@ -163,6 +164,12 @@ public class PlaybackManager implements Playback.Callback {
         public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
             Log.d(TAG, "New mediaButtonEvent " + mediaButtonEvent);
             return super.onMediaButtonEvent(mediaButtonEvent);
+        }
+
+        @Override
+        public void onCustomAction(String action, Bundle extras) {
+            super.onCustomAction(action, extras);
+            Log.d(TAG, "Custom action!! " + extras.toString());
         }
     }
 

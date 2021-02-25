@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -233,8 +234,9 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     }
 
     @ReactMethod
-    public void addSongToAlternativeQueue() {
-
+    public void addSongToSelectedQueueByPosition(int queueItem, Promise promise) {
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE, new Bundle());
     }
 
     @ReactMethod

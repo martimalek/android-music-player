@@ -44,7 +44,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
     private static final String HISTORY_PARENT_ID = "HISTORY";
 
-    private ArrayList<MediaItem> historyList = new ArrayList<>();
+    private final ArrayList<MediaItem> historyList = new ArrayList<>();
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
