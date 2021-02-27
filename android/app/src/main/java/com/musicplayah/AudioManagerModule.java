@@ -234,9 +234,11 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     }
 
     @ReactMethod
-    public void addSongToSelectedQueueByPosition(int queueItem, Promise promise) {
+    public void addSongToSelectedQueueByPosition(int queueIndex, Promise promise) {
         MediaControllerCompat mediaController = getMediaController();
-        if (mediaController != null) mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE, new Bundle());
+        Bundle selectedQueueBundle = new Bundle();
+        selectedQueueBundle.putInt("index", queueIndex);
+        if (mediaController != null) mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE, selectedQueueBundle);
     }
 
     @ReactMethod

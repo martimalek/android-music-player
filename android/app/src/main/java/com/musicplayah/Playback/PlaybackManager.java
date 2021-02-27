@@ -1,5 +1,6 @@
 package com.musicplayah.Playback;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -18,14 +19,14 @@ import com.musicplayah.MusicProvider;
 import java.util.List;
 
 public class PlaybackManager implements Playback.Callback {
-    private static String TAG = Constants.TAG;
+    private static final String TAG = Constants.TAG;
 
-    private MediaSessionCallback mediaSessionCallback;
-    private MediaPlaybackService playbackService;
+    private final MediaSessionCallback mediaSessionCallback;
+    private final MediaPlaybackService playbackService;
 
     private Context context;
-    private QueueManager queueManager;
-    private ExoPlayback exoPlayback;
+    private final QueueManager queueManager;
+    private final ExoPlayback exoPlayback;
 
     PlaybackStateCompat.Builder stateBuilder;
 
@@ -55,6 +56,7 @@ public class PlaybackManager implements Playback.Callback {
         }
     }
 
+    @SuppressLint("NewApi")
     public void handlePauseRequest() {
         Log.d(TAG, "Handling Pause request!");
         if (exoPlayback.isPlaying()) {
@@ -95,7 +97,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
-        return queueManager.getCurrentQueue();
+        return queueManager.getDefaultQueue();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -130,6 +132,7 @@ public class PlaybackManager implements Playback.Callback {
             handlePlayRequest();
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onPause() {
             handlePauseRequest();
@@ -170,6 +173,11 @@ public class PlaybackManager implements Playback.Callback {
         public void onCustomAction(String action, Bundle extras) {
             super.onCustomAction(action, extras);
             Log.d(TAG, "Custom action!! " + extras.toString());
+            int index = extras.getInt("index");
+            if (action.equals(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE)) {
+                queueManager.setSongToSelectedQueueByIndex(index);
+                queueManager.updateMetadata();
+            }
         }
     }
 
