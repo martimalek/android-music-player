@@ -1,4 +1,4 @@
-package com.musicplayah;
+package com.musicplayah.Playback;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -11,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.os.RemoteException;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -19,11 +18,14 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.media.session.MediaButtonReceiver;
+
+import com.musicplayah.MainActivity;
+import com.musicplayah.R;
+import com.musicplayah.Utils.Constants;
 
 public class MediaNotificationManager extends BroadcastReceiver {
     String TAG = Constants.TAG + "_NOTIFICATION";

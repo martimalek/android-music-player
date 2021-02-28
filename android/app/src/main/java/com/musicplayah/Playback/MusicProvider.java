@@ -1,26 +1,17 @@
-package com.musicplayah;
+package com.musicplayah.Playback;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.provider.MediaStore;
-import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.MediaMetadata;
-
 import java.util.ArrayList;
-import java.util.List;
 
-import static com.musicplayah.Constants.TAG;
+import static com.musicplayah.Utils.Constants.TAG;
 
 public class MusicProvider {
 

@@ -12,9 +12,7 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.musicplayah.Constants;
-import com.musicplayah.MediaPlaybackService;
-import com.musicplayah.MusicProvider;
+import com.musicplayah.Utils.Constants;
 
 import java.util.List;
 
@@ -81,7 +79,6 @@ public class PlaybackManager implements Playback.Callback {
         Log.d(TAG, "Skipping to next");
         if (queueManager.goToNextSong()) handlePlayRequest();
         else handleStopRequest(); // Skipping is impossible
-        queueManager.updateMetadata();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -89,7 +86,6 @@ public class PlaybackManager implements Playback.Callback {
         Log.d(TAG, "Skipping to next");
         if (queueManager.goToPreviousSong()) handlePlayRequest();
         else handleStopRequest(); // Skipping is impossible
-        queueManager.updateMetadata();
     }
 
     public MediaSessionCompat.Callback getMediaSessionCallback() {
@@ -173,9 +169,9 @@ public class PlaybackManager implements Playback.Callback {
         public void onCustomAction(String action, Bundle extras) {
             super.onCustomAction(action, extras);
             Log.d(TAG, "Custom action!! " + extras.toString());
-            int index = extras.getInt("index");
+            int position = extras.getInt("position");
             if (action.equals(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE)) {
-                queueManager.setSongToSelectedQueueByIndex(index);
+                queueManager.addSongToSelectedQueueByIndex(position);
                 queueManager.updateMetadata();
             }
         }

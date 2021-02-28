@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.util.Log;
 import android.view.KeyEvent;
 
-import com.musicplayah.Constants;
+import com.musicplayah.Utils.Constants;
 
 public class RemoteControlReceiver extends BroadcastReceiver {
     @Override

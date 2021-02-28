@@ -1,4 +1,4 @@
-package com.musicplayah;
+package com.musicplayah.Playback;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -18,9 +18,8 @@ import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 
-import com.musicplayah.Playback.ExoPlayback;
-import com.musicplayah.Playback.PlaybackManager;
-import com.musicplayah.Playback.QueueManager;
+import com.musicplayah.Utils.Constants;
+import com.musicplayah.MainActivity;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -95,6 +94,14 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             public void onPauseRequest() {
                 Log.d(TAG, "MetadataUpdateListener onPauseRequest");
                 mediaSession.getController().getTransportControls().pause();
+            }
+
+            @Override
+            public void onQueuePositionChanged(int position) {
+                Log.d(TAG, "MetadataUpdateListener onQueuePositionChanged " + position);
+                Bundle extras = new Bundle();
+                extras.putInt("position", position);
+                mediaSession.setExtras(extras);
             }
         });
 

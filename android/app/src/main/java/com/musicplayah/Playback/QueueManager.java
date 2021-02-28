@@ -1,14 +1,13 @@
 package com.musicplayah.Playback;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
-import android.media.session.MediaSession;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
-import com.musicplayah.Constants;
-import com.musicplayah.MusicProvider;
+import com.musicplayah.Utils.Constants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +17,7 @@ public class QueueManager {
     private static final String TAG = Constants.TAG;
 
     private final MusicProvider musicProvider;
-    private Context context;
+    private final Context context;
     private Resources resources;
     private final List<MediaSessionCompat.QueueItem> defaultQueue;
     private List<MediaSessionCompat.QueueItem> selectedQueue;
@@ -62,27 +61,31 @@ public class QueueManager {
             defaultQueue.addAll(newTracks);
         }
 
-        if (currentPlayingItem == null) currentPlayingItem = defaultQueue.get(0);
-
         listener.onQueueUpdated("AlbumTitle", defaultQueue);
     }
 
     public void setCurrentQueueItem(long queueId) {
         int index = QueueHelper.getItemIndexOnQueue(defaultQueue, queueId);
         if (index >= 0 && index < defaultQueue.size()) {
+            if (!isPlayingDefaultQueue) {
+                isPlayingDefaultQueue = true;
+                emptySelectedQueue();
+            }
             currentPlayingItem = defaultQueue.get(index);
             listener.onNowPlayingChanged(currentPlayingItem);
         }
     }
 
     public boolean goToNextSong() {
-        Log.d(TAG, "Skipping song, queue size => " + defaultQueue.size());
-        if (defaultQueue.size() > 0) {
-            int index = QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId());
-            Log.d(TAG, "Index " + index + " queue size " +  defaultQueue.size());
-            if (index >= 0 && index <= (defaultQueue.size() - 1)) {
-                if (index < (defaultQueue.size() - 1)) currentPlayingItem = defaultQueue.get(index + 1);
-                else currentPlayingItem = defaultQueue.get(0);
+        List<MediaSessionCompat.QueueItem> currentQueue = getCurrentQueue();
+        Log.d(TAG, "Skipping song, queue size => " + currentQueue.size());
+        if (currentQueue.size() > 0) {
+            if (currentPlayingItem == null) currentPlayingItem = defaultQueue.get(0);
+            int index = QueueHelper.getItemIndexOnQueue(currentQueue, currentPlayingItem.getQueueId());
+            Log.d(TAG, "Index " + index + " queue size " +  currentQueue.size());
+            if (index >= 0 && index <= (currentQueue.size() - 1)) {
+                if (index < (currentQueue.size() - 1)) currentPlayingItem = currentQueue.get(index + 1);
+                else currentPlayingItem = currentQueue.get(0);
             }
             return true;
         }
@@ -90,32 +93,44 @@ public class QueueManager {
     }
 
     public boolean goToPreviousSong() {
-        Log.d(TAG, "Skipping song, queue size => " + defaultQueue.size());
-        if (defaultQueue.size() > 0) {
-            int index = QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId());
-            if (index >= 0 && index <= defaultQueue.size()) {
-                if (index > 0)  currentPlayingItem = defaultQueue.get(index - 1);
-                else currentPlayingItem = defaultQueue.get(defaultQueue.size() - 1);
+        List<MediaSessionCompat.QueueItem> currentQueue = getCurrentQueue();
+        Log.d(TAG, "Skipping song, queue size => " + currentQueue.size());
+        if (currentQueue.size() > 0) {
+            if (currentPlayingItem == null) currentPlayingItem = defaultQueue.get(0);
+            int index = QueueHelper.getItemIndexOnQueue(currentQueue, currentPlayingItem.getQueueId());
+            if (index >= 0 && index <= currentQueue.size()) {
+                if (index > 0)  currentPlayingItem = currentQueue.get(index - 1);
+                else currentPlayingItem = currentQueue.get(currentQueue.size() - 1);
             }
             return true;
         }
         return false;
     }
 
-    public void setSongToSelectedQueueByIndex(int index) {
+    public void addSongToSelectedQueueByIndex(int index) {
         Log.d(TAG, "setSongToSelectedQueueByIndex " + index);
         if (index >= 0 && index < defaultQueue.size()) {
-            Log.d(TAG, "queue size " + selectedQueue.size());
+
+            if (isPlayingDefaultQueue) {
+                isPlayingDefaultQueue = false;
+
+                if (currentPlayingItem != null) selectedQueue.add(0, currentPlayingItem);
+            }
 
             MediaSessionCompat.QueueItem selectedItem = defaultQueue.get(index);
             selectedQueue.add(selectedItem);
-            Log.d(TAG, "after queue size " + selectedQueue.size());
+            Log.d(TAG, "Queue size " + selectedQueue.size());
+            Log.d(TAG, "currentPlayingItem " + currentPlayingItem);
 
             if (currentPlayingItem == null) {
                 currentPlayingItem = selectedItem;
                 listener.onNowPlayingChanged(currentPlayingItem);
             }
         }
+    }
+
+    private void emptySelectedQueue() {
+        if (selectedQueue.size() > 0) selectedQueue.clear();
     }
 
     public void updateMetadata() {
@@ -132,12 +147,20 @@ public class QueueManager {
 
         listener.onMetadataChanged(metadata);
         listener.onQueueUpdated("AlbumTitle", defaultQueue);
+        listener.onQueuePositionChanged(QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId()));
 
         // handle artwork change (metadata.getDescription().getIconBitmap())
     }
 
     public MediaSessionCompat.QueueItem getCurrentMusic() {
+        if (currentPlayingItem == null && defaultQueue.size() > 0) currentPlayingItem = defaultQueue.get(0);
+
         return currentPlayingItem;
+    }
+
+    private List<MediaSessionCompat.QueueItem> getCurrentQueue() {
+        if (isPlayingDefaultQueue) return defaultQueue;
+        return selectedQueue;
     }
 
     public interface MetadataUpdateListener {
@@ -145,6 +168,7 @@ public class QueueManager {
         void onMetadataRetrieveError();
         void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue);
         void onNowPlayingChanged(MediaSessionCompat.QueueItem nowPlaying);
+        void onQueuePositionChanged(int position);
         void onPauseRequest();
     }
 }

@@ -19,14 +19,21 @@ export const AudioList = () => {
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_PAUSED, handleAudioStopped);
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_RESUMED, handleAudioResumed);
         DeviceEventEmitter.addListener(AudioManager.ON_CHILDREN_UPDATED, handleChildrenUpdate);
+        DeviceEventEmitter.addListener(AudioManager.ON_POSITION_CHANGED, handlePositionChanged);
 
         return () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_PAUSED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_RESUMED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_CHILDREN_UPDATED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_POSITION_CHANGED);
         }
     }, []);
+
+    const handleSongToggle = AudioManager.toggle;
+    const handleNext = AudioManager.playNext;
+    const handlePrev = AudioManager.playPrevious;
+    const onItemSwipeRight = AudioManager.addSongToSelectedQueueByPosition;
 
     useEffect(() => {
         if (hasAudioEnded) handleNext()
@@ -34,8 +41,8 @@ export const AudioList = () => {
 
     const handleAudioStopped = () => setIsPlaying(false);
     const handleAudioResumed = () => setIsPlaying(true);
-
     const handleChildrenUpdate = setSongs;
+    const handlePositionChanged = setSelectedSong;
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
@@ -46,15 +53,10 @@ export const AudioList = () => {
         if (hasAudioEnded) setHasAudioEnded(false);
         try {
             await AudioManager.playFromQueuePosition(index);
-            setSelectedSong(index);
         } catch (err) {
             // Handle error
         }
     };
-
-    const onItemSwipeRight = async (index) => {
-        await AudioManager.addSongToSelectedQueueByPosition(index);
-    }
 
     const init = async () => AudioManager.init();
 
@@ -66,24 +68,6 @@ export const AudioList = () => {
             onSwipeRight={() => onItemSwipeRight(index)}
         />
     );
-
-    const handleSongToggle = () => {
-        if (selectedSong == null) setSelectedSong(0);
-        AudioManager.toggle();
-    };
-
-    const handleNext = () => {
-        if (!selectedSong) setSelectedSong(1);
-        else if (selectedSong < songs.length - 1) setSelectedSong(selectedSong + 1);
-        else if (selectedSong === songs.length - 1) setSelectedSong(0);
-        AudioManager.playNext();
-    };
-
-    const handlePrev = () => {
-        if (selectedSong > 0) setSelectedSong(selectedSong - 1);
-        else if (selectedSong === 0) setSelectedSong(songs.length - 1);
-        AudioManager.playPrevious();
-    };
 
     return (
         <SafeAreaView style={styles.container}>

@@ -1,4 +1,4 @@
-package com.musicplayah;
+package com.musicplayah.Utils;
 
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
