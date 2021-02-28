@@ -5,9 +5,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Build;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -22,16 +20,13 @@ import com.google.android.exoplayer2.MediaMetadata;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.musicplayah.Receivers.BecomingNoisyReceiver;
-import com.musicplayah.Constants;
-import com.musicplayah.MediaPlaybackService;
-import com.musicplayah.MusicProvider;
+import com.musicplayah.Utils.Constants;
+
 import android.support.v4.media.session.MediaSessionCompat;
 
 public class ExoPlayback implements Playback {

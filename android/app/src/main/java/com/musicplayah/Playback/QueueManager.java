@@ -1,13 +1,13 @@
 package com.musicplayah.Playback;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
-import com.musicplayah.Constants;
-import com.musicplayah.MusicProvider;
+import com.musicplayah.Utils.Constants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,11 +16,13 @@ import java.util.List;
 public class QueueManager {
     private static final String TAG = Constants.TAG;
 
-    private MusicProvider musicProvider;
-    private Context context;
+    private final MusicProvider musicProvider;
+    private final Context context;
     private Resources resources;
-    private List<MediaSessionCompat.QueueItem> playingQueue;
-    private MetadataUpdateListener listener;
+    private final List<MediaSessionCompat.QueueItem> defaultQueue;
+    private List<MediaSessionCompat.QueueItem> selectedQueue;
+    private boolean isPlayingDefaultQueue = true;
+    private final MetadataUpdateListener listener;
 
     private MediaSessionCompat.QueueItem currentPlayingItem;
 
@@ -35,113 +37,100 @@ public class QueueManager {
         this.context = context;
         this.listener = listener;
 
-        playingQueue = Collections.synchronizedList(new ArrayList<>());
+        defaultQueue = Collections.synchronizedList(new ArrayList<>());
+        selectedQueue = Collections.synchronizedList(new ArrayList<>());
 
         currentPlayingItem = null;
     }
 
-    public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
-            return playingQueue;
-    }
-
-    private List<MediaSessionCompat.QueueItem> getRandomQueue(MusicProvider musicProvider, int numberOfSongs) {
-        List<MediaMetadataCompat> result = new ArrayList<>(numberOfSongs);
-
-        MediaMetadataCompat randomlyChosenTrack;
-        for (int i = 0 ; i < numberOfSongs ; i++) {
-            randomlyChosenTrack = musicProvider.getRandomSongFromAllSongsOnDevice();
-            result.add(randomlyChosenTrack);
-            if (randomlyChosenTrack == null) {
-                Log.d(TAG, "randomlyChosenTrack is NULL");
-            } else {
-                Log.d(TAG, "randomly chosen track: " + randomlyChosenTrack.getDescription().getTitle());
-            }
-        }
-
-        Log.d(TAG, "getRandomQueue: result.size=" + result.size());
-
-        return convertToQueue(result);
+    public List<MediaSessionCompat.QueueItem> getDefaultQueue() {
+            return defaultQueue;
     }
 
     public void fillQueueWithAllSongs() {
-        int currentQueueSize = playingQueue.size();
-        Log.d(TAG, "fillQueueWithAllSongs, current size = " + playingQueue.size());
+        int currentQueueSize = defaultQueue.size();
+        Log.d(TAG, "fillQueueWithAllSongs, current size = " + defaultQueue.size());
 
-        if (currentQueueSize < 10) // TODO: Should this value come from somewhere ??
+        if (currentQueueSize < 10)
         {
             ArrayList<MediaMetadataCompat> allSongsOnDevice = musicProvider.getAllSongs();
 
-            List<MediaSessionCompat.QueueItem> newTracks = convertToQueue(allSongsOnDevice);
+            List<MediaSessionCompat.QueueItem> newTracks = QueueHelper.convertToQueue(allSongsOnDevice);
 
             Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
-            playingQueue.addAll(newTracks);
+            defaultQueue.addAll(newTracks);
         }
 
-        if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
-
-        listener.onQueueUpdated("AlbumTitle", playingQueue);
+        listener.onQueueUpdated("AlbumTitle", defaultQueue);
     }
 
     public void setCurrentQueueItem(long queueId) {
-        int index = getItemIndexOnQueue(playingQueue, queueId);
-        if (index >= 0 && index < playingQueue.size()) {
-            currentPlayingItem = playingQueue.get(index);
+        int index = QueueHelper.getItemIndexOnQueue(defaultQueue, queueId);
+        if (index >= 0 && index < defaultQueue.size()) {
+            if (!isPlayingDefaultQueue) {
+                isPlayingDefaultQueue = true;
+                emptySelectedQueue();
+            }
+            currentPlayingItem = defaultQueue.get(index);
             listener.onNowPlayingChanged(currentPlayingItem);
         }
     }
 
-    public static int getItemIndexOnQueue(Iterable<MediaSessionCompat.QueueItem> queue, long queueId) {
-        int index = 0;
-        for (MediaSessionCompat.QueueItem item : queue) {
-            if (queueId == item.getQueueId()) return index;
-            index++;
-        }
-        return -1;
-    }
-
-    public void fillRandomQueue() {
-        int currentQueueSize = playingQueue.size();
-        Log.d(TAG, "fillRandomQueue, current size = " + playingQueue.size());
-
-        if (currentQueueSize < 10) // TODO: Should this value come from somewhere ??
-        {
-            List<MediaSessionCompat.QueueItem> newTracks = getRandomQueue(musicProvider, 10); // Same ?
-
-            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
-            playingQueue.addAll(newTracks);
-        }
-
-        if (currentPlayingItem == null) currentPlayingItem = playingQueue.get(0);
-
-        listener.onQueueUpdated("AlbumTitle", playingQueue);
-    }
-
     public boolean goToNextSong() {
-        Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
-        if (playingQueue.size() > 0) {
-            int index = getItemIndexOnQueue(playingQueue, currentPlayingItem.getQueueId());
-            if (index >= 0 && index <= playingQueue.size()) {
-                if (index < playingQueue.size()) {
-                    currentPlayingItem = playingQueue.get(index + 1);
-                } else currentPlayingItem = playingQueue.get(0);
-            } // TODO: else throw custom not found exception
+        List<MediaSessionCompat.QueueItem> currentQueue = getCurrentQueue();
+        Log.d(TAG, "Skipping song, queue size => " + currentQueue.size());
+        if (currentQueue.size() > 0) {
+            if (currentPlayingItem == null) currentPlayingItem = defaultQueue.get(0);
+            int index = QueueHelper.getItemIndexOnQueue(currentQueue, currentPlayingItem.getQueueId());
+            Log.d(TAG, "Index " + index + " queue size " +  currentQueue.size());
+            if (index >= 0 && index <= (currentQueue.size() - 1)) {
+                if (index < (currentQueue.size() - 1)) currentPlayingItem = currentQueue.get(index + 1);
+                else currentPlayingItem = currentQueue.get(0);
+            }
             return true;
         }
         return false;
     }
 
     public boolean goToPreviousSong() {
-        Log.d(TAG, "Skipping song, queue size => " + playingQueue.size());
-        if (playingQueue.size() > 0) {
-            int index = getItemIndexOnQueue(playingQueue, currentPlayingItem.getQueueId());
-            if (index >= 0 && index <= playingQueue.size()) {
-                if (index > 0) {
-                    currentPlayingItem = playingQueue.get(index - 1);
-                } else currentPlayingItem = playingQueue.get(playingQueue.size() - 1);
-            } // TODO: else throw custom not found exception
+        List<MediaSessionCompat.QueueItem> currentQueue = getCurrentQueue();
+        Log.d(TAG, "Skipping song, queue size => " + currentQueue.size());
+        if (currentQueue.size() > 0) {
+            if (currentPlayingItem == null) currentPlayingItem = defaultQueue.get(0);
+            int index = QueueHelper.getItemIndexOnQueue(currentQueue, currentPlayingItem.getQueueId());
+            if (index >= 0 && index <= currentQueue.size()) {
+                if (index > 0)  currentPlayingItem = currentQueue.get(index - 1);
+                else currentPlayingItem = currentQueue.get(currentQueue.size() - 1);
+            }
             return true;
         }
         return false;
+    }
+
+    public void addSongToSelectedQueueByIndex(int index) {
+        Log.d(TAG, "setSongToSelectedQueueByIndex " + index);
+        if (index >= 0 && index < defaultQueue.size()) {
+
+            if (isPlayingDefaultQueue) {
+                isPlayingDefaultQueue = false;
+
+                if (currentPlayingItem != null) selectedQueue.add(0, currentPlayingItem);
+            }
+
+            MediaSessionCompat.QueueItem selectedItem = defaultQueue.get(index);
+            selectedQueue.add(selectedItem);
+            Log.d(TAG, "Queue size " + selectedQueue.size());
+            Log.d(TAG, "currentPlayingItem " + currentPlayingItem);
+
+            if (currentPlayingItem == null) {
+                currentPlayingItem = selectedItem;
+                listener.onNowPlayingChanged(currentPlayingItem);
+            }
+        }
+    }
+
+    private void emptySelectedQueue() {
+        if (selectedQueue.size() > 0) selectedQueue.clear();
     }
 
     public void updateMetadata() {
@@ -157,32 +146,21 @@ public class QueueManager {
         if (metadata == null) throw new IllegalArgumentException("Invalid mediaId " + mediaId);
 
         listener.onMetadataChanged(metadata);
-        listener.onQueueUpdated("AlbumTitle", playingQueue);
+        listener.onQueueUpdated("AlbumTitle", defaultQueue);
+        listener.onQueuePositionChanged(QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId()));
 
         // handle artwork change (metadata.getDescription().getIconBitmap())
-
-    }
-
-    public static int count = 0;
-
-    private static List<MediaSessionCompat.QueueItem> convertToQueue(Iterable<MediaMetadataCompat> tracks) {
-        List<MediaSessionCompat.QueueItem> queue = new ArrayList<>();
-
-        for (MediaMetadataCompat track : tracks) {
-            if (track != null) {
-                MediaMetadataCompat trackCopy = new MediaMetadataCompat.Builder(track)
-                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.getDescription().getMediaId())
-                        .build();
-
-                MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(trackCopy.getDescription(), count++);
-                queue.add(item);
-            }
-        }
-        return queue;
     }
 
     public MediaSessionCompat.QueueItem getCurrentMusic() {
+        if (currentPlayingItem == null && defaultQueue.size() > 0) currentPlayingItem = defaultQueue.get(0);
+
         return currentPlayingItem;
+    }
+
+    private List<MediaSessionCompat.QueueItem> getCurrentQueue() {
+        if (isPlayingDefaultQueue) return defaultQueue;
+        return selectedQueue;
     }
 
     public interface MetadataUpdateListener {
@@ -190,6 +168,7 @@ public class QueueManager {
         void onMetadataRetrieveError();
         void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue);
         void onNowPlayingChanged(MediaSessionCompat.QueueItem nowPlaying);
+        void onQueuePositionChanged(int position);
         void onPauseRequest();
     }
 }

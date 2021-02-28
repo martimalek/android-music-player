@@ -1,5 +1,6 @@
 package com.musicplayah.Playback;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -11,21 +12,19 @@ import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
-import com.musicplayah.Constants;
-import com.musicplayah.MediaPlaybackService;
-import com.musicplayah.MusicProvider;
+import com.musicplayah.Utils.Constants;
 
 import java.util.List;
 
 public class PlaybackManager implements Playback.Callback {
-    private static String TAG = Constants.TAG;
+    private static final String TAG = Constants.TAG;
 
-    private MediaSessionCallback mediaSessionCallback;
-    private MediaPlaybackService playbackService;
+    private final MediaSessionCallback mediaSessionCallback;
+    private final MediaPlaybackService playbackService;
 
     private Context context;
-    private QueueManager queueManager;
-    private ExoPlayback exoPlayback;
+    private final QueueManager queueManager;
+    private final ExoPlayback exoPlayback;
 
     PlaybackStateCompat.Builder stateBuilder;
 
@@ -55,6 +54,7 @@ public class PlaybackManager implements Playback.Callback {
         }
     }
 
+    @SuppressLint("NewApi")
     public void handlePauseRequest() {
         Log.d(TAG, "Handling Pause request!");
         if (exoPlayback.isPlaying()) {
@@ -79,7 +79,6 @@ public class PlaybackManager implements Playback.Callback {
         Log.d(TAG, "Skipping to next");
         if (queueManager.goToNextSong()) handlePlayRequest();
         else handleStopRequest(); // Skipping is impossible
-        queueManager.updateMetadata();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -87,7 +86,6 @@ public class PlaybackManager implements Playback.Callback {
         Log.d(TAG, "Skipping to next");
         if (queueManager.goToPreviousSong()) handlePlayRequest();
         else handleStopRequest(); // Skipping is impossible
-        queueManager.updateMetadata();
     }
 
     public MediaSessionCompat.Callback getMediaSessionCallback() {
@@ -95,7 +93,7 @@ public class PlaybackManager implements Playback.Callback {
     }
 
     public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
-        return queueManager.getCurrentQueue();
+        return queueManager.getDefaultQueue();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -105,6 +103,7 @@ public class PlaybackManager implements Playback.Callback {
         handleSkipToNext();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onPlaybackStatusChanged(int state) {
         updatePlaybackState();
@@ -129,6 +128,7 @@ public class PlaybackManager implements Playback.Callback {
             handlePlayRequest();
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         @Override
         public void onPause() {
             handlePauseRequest();
@@ -163,6 +163,17 @@ public class PlaybackManager implements Playback.Callback {
         public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
             Log.d(TAG, "New mediaButtonEvent " + mediaButtonEvent);
             return super.onMediaButtonEvent(mediaButtonEvent);
+        }
+
+        @Override
+        public void onCustomAction(String action, Bundle extras) {
+            super.onCustomAction(action, extras);
+            Log.d(TAG, "Custom action!! " + extras.toString());
+            int position = extras.getInt("position");
+            if (action.equals(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE)) {
+                queueManager.addSongToSelectedQueueByIndex(position);
+                queueManager.updateMetadata();
+            }
         }
     }
 

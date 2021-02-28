@@ -15,11 +15,7 @@ export const AudioControls = ({ isPlaying, onToggle, onNext, onPrev, duration })
                 <Image source={NextSong} style={{ ...styles.icon, ...styles.reverse }} tintColor='white' />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.8} style={styles.fab} onPress={onToggle}>
-                {isPlaying ? (
-                    <PauseIcon fill="white" />
-                ) : (
-                        <PlayIcon fill="white" />
-                    )}
+                {isPlaying ? (<PauseIcon fill="white" />) : (<PlayIcon fill="white" />)}
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.8} style={styles.smallFab} onPress={onNext}>
                 <Image source={NextSong} style={styles.icon} tintColor='white' />

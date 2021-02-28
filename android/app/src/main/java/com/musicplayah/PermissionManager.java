@@ -3,9 +3,10 @@ package com.musicplayah;
 import android.content.pm.PackageManager;
 
 import com.facebook.react.modules.core.PermissionListener;
+import com.musicplayah.Utils.ObservableBoolean;
 
-import static com.musicplayah.Constants.PERMISSION_OBSERVER_KEY;
-import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
+import static com.musicplayah.Utils.Constants.PERMISSION_OBSERVER_KEY;
+import static com.musicplayah.Utils.Constants.PERMS_REQUEST_CODE;
 
 public class PermissionManager implements PermissionListener {
 

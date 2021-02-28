@@ -3,10 +3,9 @@ package com.musicplayah;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
-import android.os.Build;
+import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -17,9 +16,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 
-import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -31,6 +28,8 @@ import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
+import com.musicplayah.Playback.MediaPlaybackService;
+import com.musicplayah.Utils.Constants;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,17 +37,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Observer;
 
-import static com.musicplayah.Constants.PERMISSION_OBSERVER_KEY;
-import static com.musicplayah.Constants.PERMS_REQUEST_CODE;
-import static com.musicplayah.Constants.permissions;
+import static com.musicplayah.Utils.Constants.PERMISSION_OBSERVER_KEY;
+import static com.musicplayah.Utils.Constants.PERMS_REQUEST_CODE;
+import static com.musicplayah.Utils.Constants.permissions;
 
 public class AudioManagerModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private static ReactApplicationContext reactContext;
-    private static String TAG = Constants.TAG;
+    private static final String TAG = Constants.TAG;
 
-    private PermissionManager permissionManager;
-    private Observer permissionObserver;
-
+    private final PermissionManager permissionManager;
     private MediaBrowserCompat mediaBrowser;
 
     private Promise initialPromise;
@@ -60,13 +57,12 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
         permissionManager = new PermissionManager();
 
-        permissionObserver = (o, permsObject) -> {
+        Observer permissionObserver = (o, permsObject) -> {
             Log.d(TAG, "Updating....");
             Pair<String, Boolean> permsPair = (Pair<String, Boolean>) permsObject;
             if (permsPair.first.equals(PERMISSION_OBSERVER_KEY) && permsPair.second) {
                 Log.d(TAG, "Perms have been granted! Connecting to mediaBrowser...");
                 mediaBrowser.connect();
-
                 initialPromise.resolve(true);
             } else initialPromise.reject("E_PERMS", "User did not accept permission");
         };
@@ -143,6 +139,14 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
             @Override
             public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
                 Log.d(TAG, "Queue changed! Size => " + queue.size());
+            }
+
+            @Override
+            public void onExtrasChanged(Bundle extras) {
+                int position = extras.getInt("position");
+                Log.d(TAG, "position " + position);
+
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.POSITION_CHANGED_EVENT, position);
             }
         };
 
@@ -223,13 +227,19 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
         Log.d(TAG, "Should play a song from queue position " + queueItem);
         try {
             MediaControllerCompat mediaController = getMediaController();
-            Log.d(TAG, "BEFORE");
             if (mediaController != null) mediaController.getTransportControls().skipToQueueItem(queueItem);
-            Log.d(TAG, "AFTER");
             promise.resolve(true);
         } catch (Exception e) {
             promise.reject("MEDIA_NOT_FOUND", "The specified media could not be found in the current queue");
         }
+    }
+
+    @ReactMethod
+    public void addSongToSelectedQueueByPosition(int queueIndex) {
+        MediaControllerCompat mediaController = getMediaController();
+        Bundle selectedQueueBundle = new Bundle();
+        selectedQueueBundle.putInt("position", queueIndex);
+        if (mediaController != null) mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE, selectedQueueBundle);
     }
 
     @ReactMethod
@@ -247,6 +257,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
         constants.put(Constants.AUDIO_PAUSED_EVENT, Constants.AUDIO_PAUSED_EVENT);
         constants.put(Constants.AUDIO_RESUMED_EVENT, Constants.AUDIO_RESUMED_EVENT);
         constants.put(Constants.CHILDREN_UPDATED_EVENT, Constants.CHILDREN_UPDATED_EVENT);
+        constants.put(Constants.POSITION_CHANGED_EVENT, Constants.POSITION_CHANGED_EVENT);
         return constants;
     }
 
