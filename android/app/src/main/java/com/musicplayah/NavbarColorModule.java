@@ -16,6 +16,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.uimanager.IllegalViewOperationException;
+import com.musicplayah.Utils.RunnableWithArg;
 
 import java.util.Map;
 
@@ -27,6 +28,7 @@ public class NavbarColorModule extends ReactContextBaseJavaModule {
     private static final String ERROR_NO_ACTIVITY_MESSAGE = "Tried to change the navigation bar while not attached to an Activity";
     private static final String ERROR_API_LEVEL = "API_LEVEl";
     private static final String ERROR_API_LEVEL_MESSAGE = "Only Android Oreo and above is supported";
+    private Window window = null;
 
     public NavbarColorModule(ReactApplicationContext context) {
         super(context);
@@ -42,6 +44,28 @@ public class NavbarColorModule extends ReactContextBaseJavaModule {
         }
     }
 
+    private void runColorAnimation(Integer fromColor, Integer toColor, RunnableWithArg<ValueAnimator> runnable) {
+        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), fromColor, toColor);
+        colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animator) {
+                runnable.run(animator);
+            }
+        });
+        colorAnimation.start();
+    }
+
+    private void prepareWindowAndRun(Runnable runnable, Promise promise) {
+        if (getCurrentActivity() != null) {
+            try {
+                window = getCurrentActivity().getWindow();
+                runOnUiThread(runnable);
+            } catch (IllegalViewOperationException e) {
+                promise.reject("error", e);
+            }
+        } else promise.reject(ERROR_NO_ACTIVITY, new Throwable(ERROR_NO_ACTIVITY_MESSAGE));
+    }
+
     @Nullable
     @Override
     public Map<String, Object> getConstants() {
@@ -54,34 +78,42 @@ public class NavbarColorModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void changeNavBarColor(final String color, final Boolean light, final Promise promise) {
-        if (getCurrentActivity() != null) {
-            try {
-                final Window window = getCurrentActivity().getWindow();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-                        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-                        Integer colorFrom = window.getNavigationBarColor();
-                        Integer colorTo = Color.parseColor(String.valueOf(color));
+    public void changeNavBarColor(final String navbarColor, final String statusBarColor, final Boolean light, final Promise promise) {
+        prepareWindowAndRun(() -> {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+            Integer navbarColorFrom = window.getNavigationBarColor();
+            Integer navbarColorTo = Color.parseColor(String.valueOf(navbarColor));
+            Integer statusBarColorFrom = window.getStatusBarColor();
+            Integer statusBarColorTo = Color.parseColor(String.valueOf(statusBarColor));
 
-                        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), colorFrom, colorTo);
-                        colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                            @Override
-                            public void onAnimationUpdate(ValueAnimator animator) {
-                                window.setNavigationBarColor((Integer) animator.getAnimatedValue());
-                                window.setStatusBarColor((Integer) animator.getAnimatedValue());
-                            }
-                        });
-                        colorAnimation.start();
-                        setNavigationBarTheme(getCurrentActivity(), light);
-                        promise.resolve(true);
-                    }
-                });
-            } catch (IllegalViewOperationException e) {
-                promise.reject("error", e);
-            }
-        } else promise.reject(ERROR_NO_ACTIVITY, new Throwable(ERROR_NO_ACTIVITY_MESSAGE));
+            runColorAnimation(navbarColorFrom, navbarColorTo, (ValueAnimator animator) -> {
+                window.setNavigationBarColor((Integer) animator.getAnimatedValue());
+            });
+
+            runColorAnimation(statusBarColorFrom, statusBarColorTo, (ValueAnimator animator) -> {
+                window.setStatusBarColor((Integer) animator.getAnimatedValue());
+            });
+
+            setNavigationBarTheme(getCurrentActivity(), light);
+            promise.resolve(true);
+        }, promise);
+    }
+
+    @ReactMethod
+    public void changeNavBarColor(final String color, final Boolean light, final Promise promise) {
+        prepareWindowAndRun(() -> {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+            Integer navbarColorFrom = window.getNavigationBarColor();
+            Integer navbarColorTo = Color.parseColor(String.valueOf(color));
+
+            runColorAnimation(navbarColorFrom, navbarColorTo, (ValueAnimator animator) -> {
+                window.setNavigationBarColor((Integer) animator.getAnimatedValue());
+            });
+
+            setNavigationBarTheme(getCurrentActivity(), light);
+            promise.resolve(true);
+        }, promise);
     }
 }
