@@ -1,16 +1,20 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { MainNavigator } from './navigation/MainNavigator';
+import { changeNavBarColor } from './services/NavbarColor';
+import { Colors } from './styles';
 
 const App = () => {
 
+    useEffect(() => {
+        changeNavBarColor(Colors.background);
+    }, []);
+
     return (
         <MainProvider>
-            <StatusBar barStyle="dark-content" />
             <MainNavigator />
         </MainProvider>
     );

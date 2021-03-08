@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { DeviceEventEmitter, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { DeviceEventEmitter, FlatList, StyleSheet, Text } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AudioControls } from '../components/AudioControls';
 import { AudioItem } from '../components/AudioItem';
 
 import AudioManager from '../services/AudioManager';
+import { Colors } from '../styles';
 
 export const AudioList = () => {
     const [songs, setSongs] = useState([]);
@@ -70,55 +72,30 @@ export const AudioList = () => {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <Text style={styles.title}>MUSIC</Text>
-            <FlatList
-                style={styles.list}
-                data={songs}
-                renderItem={renderItem}
-                keyExtractor={({ id }) => `song-${id}`}
-            />
-            <AudioControls
-                isPlaying={isPlaying}
-                duration={140000}
-                onToggle={handleSongToggle}
-                onNext={handleNext}
-                onPrev={handlePrev}
-            />
-        </SafeAreaView>
+        <LinearGradient colors={[Colors.background, Colors.darkerBackground]} style={styles.container}>
+            <SafeAreaView style={styles.container}>
+                <Text style={styles.title}>MUSIC</Text>
+                <FlatList
+                    style={styles.list}
+                    data={songs}
+                    renderItem={renderItem}
+                    keyExtractor={({ id }) => `song-${id}`}
+                />
+                <AudioControls
+                    isPlaying={isPlaying}
+                    duration={140000}
+                    onToggle={handleSongToggle}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                />
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    item: {
-        backgroundColor: '#597FFB',
-        paddingVertical: 20,
-        marginVertical: 8,
-        marginHorizontal: 16,
-        borderRadius: 10,
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     list: {
         marginBottom: 110,
-    },
-    itemText: {
-        color: 'white',
-        paddingHorizontal: 20,
-    },
-    fab: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'absolute',
-        width: 80,
-        height: 80,
-        right: (Dimensions.get('window').width / 2) - 40,
-        bottom: 30,
-        borderRadius: 50,
-        elevation: 3,
-        backgroundColor: '#7092ff',
     },
     selected: {
         backgroundColor: '#94adff',
@@ -132,6 +109,5 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
-        backgroundColor: '#100B2E',
     },
 });
