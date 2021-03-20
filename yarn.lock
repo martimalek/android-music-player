@@ -987,10 +987,8 @@
     "@types/yargs" "^15.0.0"
     chalk "^3.0.0"
 
-"@martimalek/react-native-bars-colors@^1.0.0":
+"@martimalek/react-native-bars-colors@file:../react-native-bars-colors":
   version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@martimalek/react-native-bars-colors/-/react-native-bars-colors-1.0.1.tgz#58cef2887def3ad11e37952a564c729950e0a95b"
-  integrity sha512-UjqIp8gXBCQ4YDefnvNdqlFOq9EY6wU+Fg4c3vLwok2Q+Baa09iWWGP6BMgcJ4UPksNAoP9z+C6q5wZzC8TL3g==
 
 "@react-native-community/cli-debugger-ui@^4.13.1":
   version "4.13.1"
