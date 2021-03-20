@@ -12,7 +12,7 @@
     "clean": "rm -rf node_modules && yarn"
   },
   "dependencies": {
-    "@martimalek/react-native-bars-colors": "^1.0.1",
+    "@martimalek/react-native-bars-colors": "^1.1.0",
     "@react-native-community/masked-view": "^0.1.10",
     "@react-navigation/native": "^5.8.0",
     "@react-navigation/stack": "^5.10.0",
