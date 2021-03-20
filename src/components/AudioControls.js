@@ -40,7 +40,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         bottom: 0,
         elevation: 3,
-        backgroundColor: '#7092ff',
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
@@ -52,7 +51,6 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 50,
-        backgroundColor: '#7092ff',
     },
     smallFab: {
         alignItems: 'center',
@@ -60,7 +58,6 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 50,
-        backgroundColor: '#7092ff',
         marginHorizontal: 20,
     },
     icon: {

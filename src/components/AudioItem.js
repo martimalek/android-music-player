@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, Animated, PanResponder } from 'react-native';
+import PropTypes from 'prop-types';
+import { Colors } from '../styles';
 
-export const AudioItem = ({ title, style, onSwipeRight, ...props }) => {
+export const AudioItem = ({ title, onSwipeRight, isSelected }) => {
     const pan = useRef(new Animated.ValueXY()).current;
     const isPannable = useRef(true);
 
@@ -40,19 +42,24 @@ export const AudioItem = ({ title, style, onSwipeRight, ...props }) => {
 
     return (
         <Animated.View
-            style={{ transform: [{ translateX: pan.x }] }}
+            style={{ transform: [{ translateX: pan.x }], ...(isSelected ? styles.selected : {}) }}
             {...panResponder.panHandlers}
         >
-            <TouchableOpacity style={{ ...styles.item, ...style }} {...props}>
+            <TouchableOpacity style={{ ...styles.item }}>
                 <Text style={styles.itemText}>{title}</Text>
             </TouchableOpacity>
         </Animated.View>
     );
 };
 
+AudioItem.propTypes = {
+    title: PropTypes.string.isRequired,
+    onSwipeRight: PropTypes.func.isRequired,
+    isSelected: PropTypes.bool,
+};
+
 const styles = StyleSheet.create({
     item: {
-        backgroundColor: '#597FFB',
         paddingVertical: 20,
         marginVertical: 8,
         marginHorizontal: 16,
@@ -60,6 +67,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    selected: {
+        backgroundColor: Colors.selected,
     },
     itemText: {
         color: 'white',

@@ -8,9 +8,11 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "clean": "rm -rf node_modules && yarn"
   },
   "dependencies": {
+    "@martimalek/react-native-bars-colors": "^1.0.1",
     "@react-native-community/masked-view": "^0.1.10",
     "@react-navigation/native": "^5.8.0",
     "@react-navigation/stack": "^5.10.0",
@@ -21,8 +23,7 @@
     "react-native-reanimated": "^1.13.1",
     "react-native-safe-area-context": "^3.1.8",
     "react-native-screens": "^2.11.0",
-    "react-native-svg": "^12.1.0",
-    "react-native-bars-colors": "file:../react-native-bars-colors"
+    "react-native-svg": "^12.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.8.4",

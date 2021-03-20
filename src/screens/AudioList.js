@@ -64,10 +64,10 @@ export const AudioList = () => {
 
     const renderItem = ({ item: { title }, index }) => (
         <AudioItem
-            style={{ ...(index === selectedSong ? styles.selected : {}) }}
-            onPress={() => playSong(index)}
+            isSelected={index === selectedSong}
             title={title}
             onSwipeRight={() => onItemSwipeRight(index)}
+            onPress={() => playSong(index)}
         />
     );
 

@@ -10,7 +10,7 @@ import { Colors } from './styles';
 const App = () => {
 
     useEffect(() => {
-        changeNavBarColor(Colors.background);
+        changeNavBarColor(Colors.darkerBackground, Colors.background);
     }, []);
 
     return (
