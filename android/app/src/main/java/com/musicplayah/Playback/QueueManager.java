@@ -1,7 +1,6 @@
 package com.musicplayah.Playback;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.Resources;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -20,9 +19,11 @@ public class QueueManager {
     private final Context context;
     private Resources resources;
     private final List<MediaSessionCompat.QueueItem> defaultQueue;
-    private List<MediaSessionCompat.QueueItem> selectedQueue;
+    private final List<MediaSessionCompat.QueueItem> selectedQueue;
     private boolean isPlayingDefaultQueue = true;
     private final MetadataUpdateListener listener;
+    private final String DEFAULT_QUEUE = "DEFAULT_QUEUE";
+    private final String SELECTED_QUEUE = "SELECTED_QUEUE";
 
     private MediaSessionCompat.QueueItem currentPlayingItem;
 
@@ -61,7 +62,7 @@ public class QueueManager {
             defaultQueue.addAll(newTracks);
         }
 
-        listener.onQueueUpdated("AlbumTitle", defaultQueue);
+        listener.onQueueUpdated(DEFAULT_QUEUE, defaultQueue);
     }
 
     public void setCurrentQueueItem(long queueId) {
@@ -146,7 +147,8 @@ public class QueueManager {
         if (metadata == null) throw new IllegalArgumentException("Invalid mediaId " + mediaId);
 
         listener.onMetadataChanged(metadata);
-        listener.onQueueUpdated("AlbumTitle", defaultQueue);
+        if (isPlayingDefaultQueue) listener.onQueueUpdated(DEFAULT_QUEUE, defaultQueue);
+        else listener.onQueueUpdated(SELECTED_QUEUE, selectedQueue);
         listener.onQueuePositionChanged(QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId()));
 
         // handle artwork change (metadata.getDescription().getIconBitmap())

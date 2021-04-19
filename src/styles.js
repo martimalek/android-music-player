@@ -3,4 +3,5 @@ export const Colors = {
     darkerBackground: '#17191C',
     selected: '#111214',
     darkerSelected: '#191B1E',
+    orange: '#DC4808',
 };

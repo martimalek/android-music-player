@@ -50,6 +50,8 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
     private Promise initialPromise;
 
+    private boolean isPlayingSelectedQueue = false;
+
     AudioManagerModule(ReactApplicationContext context) {
         super(context);
         reactContext = context;
@@ -137,16 +139,33 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
             }
 
             @Override
-            public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
-                Log.d(TAG, "Queue changed! Size => " + queue.size());
-            }
-
-            @Override
             public void onExtrasChanged(Bundle extras) {
                 int position = extras.getInt("position");
                 Log.d(TAG, "position " + position);
 
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.POSITION_CHANGED_EVENT, position);
+            }
+
+            @Override
+            public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
+                Log.d(TAG, "Queue changed! Size => " + queue.size());
+                if (isPlayingSelectedQueue) {
+                    Log.d(TAG, "PLAYING SELECTED QUEUE " + queue.get(0).getDescription());
+                    WritableMap selectedMap = new WritableNativeMap();
+
+                    for (MediaSessionCompat.QueueItem child : queue) {
+                        WritableMap childMap = buildItemMap(child.getDescription());
+                        selectedMap.putMap(Objects.requireNonNull(childMap.getString("id")), childMap);
+                    }
+                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.SELECTED_QUEUE_CHANGED_EVENT, selectedMap);
+                }
+            }
+
+            @Override
+            public void onQueueTitleChanged(CharSequence title) {
+                super.onQueueTitleChanged(title);
+                if (title.toString().equals(Constants.SELECTED_QUEUE)) isPlayingSelectedQueue = true;
+                Log.d(TAG, "Queue title changed! " + title.toString());
             }
         };
 
@@ -180,22 +199,24 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
         Log.d(TAG, "Example of child " + updatedChildren.get(0).getDescription().toString());
 
         for (MediaBrowserCompat.MediaItem child: updatedChildren) {
-            WritableMap map = new WritableNativeMap();
-
-            MediaDescriptionCompat description = child.getDescription();
-
-            map.putString("id", description.getMediaId());
-            CharSequence title = description.getTitle();
-            if (title != null) map.putString("title", title.toString());
-            else map.putNull("title");
-
-            CharSequence subtitle = description.getSubtitle();
-            if (subtitle != null && !subtitle.toString().equals("<unknown>")) map.putString("subtitle", subtitle.toString());
-            else map.putNull("subtitle");
-
-            childrenArray.pushMap(map);
+            childrenArray.pushMap(buildItemMap(child.getDescription()));
         }
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.CHILDREN_UPDATED_EVENT, childrenArray);
+    }
+
+    private WritableMap buildItemMap(MediaDescriptionCompat description) {
+        WritableMap map = new WritableNativeMap();
+
+        map.putString("id", description.getMediaId());
+        CharSequence title = description.getTitle();
+        if (title != null) map.putString("title", title.toString());
+        else map.putNull("title");
+
+        CharSequence subtitle = description.getSubtitle();
+        if (subtitle != null && !subtitle.toString().equals("<unknown>")) map.putString("subtitle", subtitle.toString());
+        else map.putNull("subtitle");
+
+        return map;
     }
 
     @ReactMethod
@@ -258,6 +279,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
         constants.put(Constants.AUDIO_RESUMED_EVENT, Constants.AUDIO_RESUMED_EVENT);
         constants.put(Constants.CHILDREN_UPDATED_EVENT, Constants.CHILDREN_UPDATED_EVENT);
         constants.put(Constants.POSITION_CHANGED_EVENT, Constants.POSITION_CHANGED_EVENT);
+        constants.put(Constants.SELECTED_QUEUE_CHANGED_EVENT, Constants.SELECTED_QUEUE_CHANGED_EVENT);
         return constants;
     }
 

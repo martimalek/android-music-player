@@ -135,8 +135,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             } else MediaButtonReceiver.handleIntent(mediaSession, intent);
         }
 
-//        mDelayedStopHandler.removeCallbacksAndMessages(null);
-//        mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         return START_STICKY;
     }
 
@@ -145,17 +143,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
         Log.d(TAG, "MediaPlaybackService onGetRoot packageName " + clientPackageName);
         return new BrowserRoot(MY_MEDIA_ROOT_ID, null);
-        // (Optional) Control the level of access for the specified package name.
-        // You'll need to write your own logic to do this.
-//        if (allowBrowsing(clientPackageName, clientUid)) {
-//            // Returns a root ID that clients can use with onLoadChildren() to retrieve
-//            // the content hierarchy.
-//            return new BrowserRoot(MY_MEDIA_ROOT_ID, null);
-//        } else {
-//            // Clients can connect, but this BrowserRoot is an empty hierachy
-//            // so onLoadChildren returns nothing. This disables the ability to browse for content.
-//            return new BrowserRoot(MY_EMPTY_MEDIA_ROOT_ID, null);
-//        }
     }
 
     @Override
@@ -229,7 +216,14 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         playbackManager.handleStopRequest();
         mediaNotificationManager.stopNotification();
 
-        // delayedStopHandler.removeCallbacksAndMessages(null);
         mediaSession.release();
     }
+
+//    @Override
+//    public void onCustomAction(@NonNull String action, Bundle extras, @NonNull Result<Bundle> result) {
+//        if (action.equals(Constants.CUSTOM_ACTION_GET_SELECTED_QUEUE)) {
+//            result.sendResult();
+//        }
+//    }
+
 }

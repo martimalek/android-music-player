@@ -13,6 +13,10 @@ public class Constants {
     public static String AUDIO_RESUMED_EVENT = "ON_AUDIO_RESUMED";
     public static String CHILDREN_UPDATED_EVENT = "ON_CHILDREN_UPDATED";
     public static String POSITION_CHANGED_EVENT = "ON_POSITION_CHANGED";
+    public static String SELECTED_QUEUE_CHANGED_EVENT = "ON_SELECTED_QUEUE_CHANGED";
+
+    public static String DEFAULT_QUEUE = "DEFAULT_QUEUE";
+    public static String SELECTED_QUEUE = "SELECTED_QUEUE";
 
     public static String CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE = "CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE";
 
