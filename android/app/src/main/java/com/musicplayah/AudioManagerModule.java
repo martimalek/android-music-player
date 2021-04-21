@@ -55,15 +55,13 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     AudioManagerModule(ReactApplicationContext context) {
         super(context);
         reactContext = context;
-        Log.d(TAG, "Inside constructor");
+        Log.d(TAG, "AudioManagerModule constructor");
 
         permissionManager = new PermissionManager();
 
         Observer permissionObserver = (o, permsObject) -> {
-            Log.d(TAG, "Updating....");
             Pair<String, Boolean> permsPair = (Pair<String, Boolean>) permsObject;
             if (permsPair.first.equals(PERMISSION_OBSERVER_KEY) && permsPair.second) {
-                Log.d(TAG, "Perms have been granted! Connecting to mediaBrowser...");
                 mediaBrowser.connect();
                 initialPromise.resolve(true);
             } else initialPromise.reject("E_PERMS", "User did not accept permission");
@@ -77,27 +75,21 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
-            Log.d(TAG, "onConnected");
             connectToSession(mediaBrowser.getSessionToken());
             subscribeToChildrenChanges();
         }
     };
 
     private void subscribeToChildrenChanges() {
-        Log.d(TAG, "Subscribed to children changes!");
-
         try {
             String root = mediaBrowser.getRoot();
             mediaBrowser.subscribe(root, new MediaBrowserCompat.SubscriptionCallback() {
                 @Override
                 public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children) {
-                    Log.d(TAG, "CHILDREN LOADED!");
-                    if (children == null || children.isEmpty()) {
-                        Log.d(TAG, "children is f*cking empty T.T");
-                        return;
-                    }
+                    if (children == null || children.isEmpty()) return;
                     Log.d(TAG, "There are " + children.size() + " children!");
                     sendChildrenToReact(children);
+                    updateQueue();
                 }
             });
         } catch (Exception e) {
@@ -106,20 +98,14 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     }
 
     private void connectToSession(MediaSessionCompat.Token token) {
-        Log.d(TAG, "connectToSession");
-
         Activity currentActivity = getCurrentActivity();
 
         if (currentActivity != null) {
-            Log.d(TAG, "There is an Activity");
-
             MediaControllerCompat mediaController = new MediaControllerCompat(reactContext, token);
 
             MediaControllerCompat.setMediaController(currentActivity, mediaController);
 
             mediaController.registerCallback(controllerCallback);
-        } else {
-            Log.d(TAG, "There is no Activity");
         }
     }
 
@@ -150,7 +136,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
             public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
                 Log.d(TAG, "Queue changed! Size => " + queue.size());
                 if (isPlayingSelectedQueue) {
-                    Log.d(TAG, "PLAYING SELECTED QUEUE " + queue.get(0).getDescription());
                     WritableMap selectedMap = new WritableNativeMap();
 
                     for (MediaSessionCompat.QueueItem child : queue) {
@@ -183,7 +168,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
                 PermissionAwareActivity activity = (PermissionAwareActivity) currentActivity;
                 activity.requestPermissions(permissions, PERMS_REQUEST_CODE, this.permissionManager);
             }
-        } else Log.d(TAG, "Permissions already granted!");
+        }
     }
 
     private MediaControllerCompat getMediaController() {
@@ -196,12 +181,16 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
         Log.d(TAG, "Sending children to react");
         WritableArray childrenArray = new WritableNativeArray();
 
-        Log.d(TAG, "Example of child " + updatedChildren.get(0).getDescription().toString());
-
         for (MediaBrowserCompat.MediaItem child: updatedChildren) {
             childrenArray.pushMap(buildItemMap(child.getDescription()));
         }
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.CHILDREN_UPDATED_EVENT, childrenArray);
+    }
+
+    private void updateQueue() {
+        Log.d(TAG, "UPDATE QUEUE");
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_UPDATE_QUEUE, new Bundle());
     }
 
     private WritableMap buildItemMap(MediaDescriptionCompat description) {
@@ -221,8 +210,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
     @ReactMethod
     public void toggle() {
-        Log.d(TAG, "Toggling...");
-
         MediaControllerCompat mediaController = getMediaController();
         if (mediaController != null) {
             Log.d(TAG, "State " + mediaController.getPlaybackState().getState());
@@ -245,7 +232,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
     @ReactMethod
     public void playFromQueuePosition(int queueItem, Promise promise) {
-        Log.d(TAG, "Should play a song from queue position " + queueItem);
         try {
             MediaControllerCompat mediaController = getMediaController();
             if (mediaController != null) mediaController.getTransportControls().skipToQueueItem(queueItem);
@@ -286,6 +272,11 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
     @Override
     public void onHostResume() {
         Log.d(TAG, "onHostResume");
+        MediaControllerCompat mediaController = getMediaController();
+        if (mediaController != null) {
+            Log.d(TAG, "SENDING CUSTOM ACTION");
+            mediaController.getTransportControls().sendCustomAction(Constants.CUSTOM_ACTION_UPDATE_QUEUE, new Bundle());
+        }
         Objects.requireNonNull(reactContext.getCurrentActivity()).setVolumeControlStream(AudioManager.STREAM_MUSIC);
     }
 

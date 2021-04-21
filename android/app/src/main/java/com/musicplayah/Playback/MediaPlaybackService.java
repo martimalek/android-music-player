@@ -114,7 +114,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         setSessionToken(mediaSession.getSessionToken());
 
         Intent intent = new Intent(context, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT); // 99 is the request code
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         mediaSession.setSessionActivity(pendingIntent);
 
         playbackManager.updatePlaybackState();
@@ -189,8 +189,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
     @Override
     public void onPlaybackStop() {
-        Log.d(TAG, "onPlaybackStop!");
-
         mediaSession.setActive(false);
 
         stopForeground(true);
@@ -218,12 +216,4 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
         mediaSession.release();
     }
-
-//    @Override
-//    public void onCustomAction(@NonNull String action, Bundle extras, @NonNull Result<Bundle> result) {
-//        if (action.equals(Constants.CUSTOM_ACTION_GET_SELECTED_QUEUE)) {
-//            result.sendResult();
-//        }
-//    }
-
 }

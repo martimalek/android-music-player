@@ -21,9 +21,8 @@ public class QueueManager {
     private final List<MediaSessionCompat.QueueItem> defaultQueue;
     private final List<MediaSessionCompat.QueueItem> selectedQueue;
     private boolean isPlayingDefaultQueue = true;
+    private boolean shouldReturnToSelectedQueue = false;
     private final MetadataUpdateListener listener;
-    private final String DEFAULT_QUEUE = "DEFAULT_QUEUE";
-    private final String SELECTED_QUEUE = "SELECTED_QUEUE";
 
     private MediaSessionCompat.QueueItem currentPlayingItem;
 
@@ -49,20 +48,14 @@ public class QueueManager {
     }
 
     public void fillQueueWithAllSongs() {
-        int currentQueueSize = defaultQueue.size();
-        Log.d(TAG, "fillQueueWithAllSongs, current size = " + defaultQueue.size());
-
-        if (currentQueueSize < 10)
+        if (defaultQueue.size() < 10)
         {
             ArrayList<MediaMetadataCompat> allSongsOnDevice = musicProvider.getAllSongs();
-
             List<MediaSessionCompat.QueueItem> newTracks = QueueHelper.convertToQueue(allSongsOnDevice);
-
-            Log.d(TAG, "Adding " +  newTracks.size() + " new songs to the queue");
             defaultQueue.addAll(newTracks);
         }
 
-        listener.onQueueUpdated(DEFAULT_QUEUE, defaultQueue);
+        listener.onQueueUpdated(Constants.DEFAULT_QUEUE, defaultQueue);
     }
 
     public void setCurrentQueueItem(long queueId) {
@@ -70,7 +63,13 @@ public class QueueManager {
         if (index >= 0 && index < defaultQueue.size()) {
             if (!isPlayingDefaultQueue) {
                 isPlayingDefaultQueue = true;
-                emptySelectedQueue();
+                shouldReturnToSelectedQueue = true;
+                // emptySelectedQueue();
+                /* TODO
+                *  Save the current index of the song being played in the selected queue
+                *  after the song ends continue playing the selected queue same as before.
+                *
+                * */
             }
             currentPlayingItem = defaultQueue.get(index);
             listener.onNowPlayingChanged(currentPlayingItem);
@@ -147,8 +146,8 @@ public class QueueManager {
         if (metadata == null) throw new IllegalArgumentException("Invalid mediaId " + mediaId);
 
         listener.onMetadataChanged(metadata);
-        if (isPlayingDefaultQueue) listener.onQueueUpdated(DEFAULT_QUEUE, defaultQueue);
-        else listener.onQueueUpdated(SELECTED_QUEUE, selectedQueue);
+        if (isPlayingDefaultQueue) listener.onQueueUpdated(Constants.DEFAULT_QUEUE, defaultQueue);
+        else listener.onQueueUpdated(Constants.SELECTED_QUEUE, selectedQueue);
         listener.onQueuePositionChanged(QueueHelper.getItemIndexOnQueue(defaultQueue, currentPlayingItem.getQueueId()));
 
         // handle artwork change (metadata.getDescription().getIconBitmap())

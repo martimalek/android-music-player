@@ -47,7 +47,7 @@ export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue }
             style={{ transform: [{ translateX: pan.x }], ...(isSelected ? styles.selected : {}) }}
             {...panResponder.panHandlers}
         >
-            <TouchableOpacity style={{ ...styles.item }}>
+            <TouchableOpacity style={{ ...styles.item }} onPress={() => console.log('Hello')}>
                 <Text style={styles.itemText}>{title}</Text>
                 {isInSelectedQueue && (<View style={styles.selectedQueueItem} />)}
             </TouchableOpacity>

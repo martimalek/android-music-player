@@ -19,6 +19,7 @@ public class Constants {
     public static String SELECTED_QUEUE = "SELECTED_QUEUE";
 
     public static String CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE = "CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE";
+    public static String CUSTOM_ACTION_UPDATE_QUEUE = "CUSTOM_ACTION_UPDATE_QUEUE";
 
     public static String PERMISSION_OBSERVER_KEY = "PERMISSION_OBSERVER_KEY";
 

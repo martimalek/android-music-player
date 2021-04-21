@@ -44,8 +44,6 @@ public class PlaybackManager implements Playback.Callback {
 
         MediaSessionCompat.QueueItem currentItem = queueManager.getCurrentMusic();
 
-        Log.d(TAG, "currentItem => " + currentItem);
-
         if (currentItem != null) {
             Log.d(TAG, "Current item => " + currentItem.getDescription().getMediaId());
             playbackService.onPlaybackStart();
@@ -156,7 +154,6 @@ public class PlaybackManager implements Playback.Callback {
         public void onSkipToQueueItem(long id) {
             queueManager.setCurrentQueueItem(id);
             queueManager.updateMetadata();
-            Log.d(TAG, "Skipping to queue item " + id);
         }
 
         @Override
@@ -173,7 +170,7 @@ public class PlaybackManager implements Playback.Callback {
             if (action.equals(Constants.CUSTOM_ACTION_ADD_TO_SELECTED_QUEUE)) {
                 queueManager.addSongToSelectedQueueByIndex(position);
                 queueManager.updateMetadata();
-            }
+            } else if (action.equals(Constants.CUSTOM_ACTION_UPDATE_QUEUE)) queueManager.updateMetadata();
         }
     }
 
