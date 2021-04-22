@@ -74,14 +74,13 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             @Override
             public void onMetadataRetrieveError() {
                 Log.d(TAG, "MetadataUpdateListener onMetadataRetrieveError");
-                // Currently not handling errors, but should do it
             }
 
             @Override
             public void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue) {
                 Log.d(TAG, "MetadataUpdateListener onQueueUpdated");
-                mediaSession.setQueue(newQueue);
                 mediaSession.setQueueTitle(title);
+                mediaSession.setQueue(newQueue);
             }
 
             @Override

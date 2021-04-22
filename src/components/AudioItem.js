@@ -12,8 +12,6 @@ export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue, 
         onSwipeRight();
     };
 
-    console.log('Hi')
-
     const panResponder = useRef(PanResponder.create({
         onMoveShouldSetPanResponder: (evt, gestureState) => {
             const { dx, dy } = gestureState

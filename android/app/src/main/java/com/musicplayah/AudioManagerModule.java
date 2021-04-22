@@ -126,10 +126,7 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
 
             @Override
             public void onExtrasChanged(Bundle extras) {
-                int position = extras.getInt("position");
-                Log.d(TAG, "position " + position);
-
-                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.POSITION_CHANGED_EVENT, position);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(Constants.POSITION_CHANGED_EVENT, extras.getInt("position"));
             }
 
             @Override
@@ -150,7 +147,6 @@ public class AudioManagerModule extends ReactContextBaseJavaModule implements Li
             public void onQueueTitleChanged(CharSequence title) {
                 super.onQueueTitleChanged(title);
                 if (title.toString().equals(Constants.SELECTED_QUEUE)) isPlayingSelectedQueue = true;
-                Log.d(TAG, "Queue title changed! " + title.toString());
             }
         };
 

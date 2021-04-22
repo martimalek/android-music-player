@@ -41,6 +41,7 @@ public class PlaybackManager implements Playback.Callback {
 
     public void handlePlayRequest() {
         Log.d(TAG, "Handling Play request!" + queueManager.toString());
+        if (queueManager.getCurrentMusic() == null) queueManager.initializeQueueWithFirstItem();
 
         MediaSessionCompat.QueueItem currentItem = queueManager.getCurrentMusic();
 

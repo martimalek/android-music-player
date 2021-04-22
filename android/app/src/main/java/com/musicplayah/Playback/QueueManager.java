@@ -149,9 +149,11 @@ public class QueueManager {
 
     public MediaSessionCompat.QueueItem getCurrentMusic() {
         Log.d(TAG, "Getting current music");
-//        if (currentPlayingItem == null && defaultQueue.size() > 0) currentPlayingItem = defaultQueue.get(0);
-
         return currentPlayingItem;
+    }
+
+    public void initializeQueueWithFirstItem() {
+        if (currentPlayingItem == null && defaultQueue.size() > 0) currentPlayingItem = defaultQueue.get(0);
     }
 
     private List<MediaSessionCompat.QueueItem> getCurrentQueue() {
