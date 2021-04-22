@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, Animated, PanResponder, View, Dimen
 import PropTypes from 'prop-types';
 import { Colors } from '../styles';
 
-export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue }) => {
+export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue, ...props }) => {
     const pan = useRef(new Animated.ValueXY()).current;
     const isPannable = useRef(true);
 
@@ -11,6 +11,8 @@ export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue }
         isPannable.current = false;
         onSwipeRight();
     };
+
+    console.log('Hi')
 
     const panResponder = useRef(PanResponder.create({
         onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -40,14 +42,12 @@ export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue }
         },
     })).current;
 
-
-
     return (
         <Animated.View
             style={{ transform: [{ translateX: pan.x }], ...(isSelected ? styles.selected : {}) }}
             {...panResponder.panHandlers}
         >
-            <TouchableOpacity style={{ ...styles.item }} onPress={() => console.log('Hello')}>
+            <TouchableOpacity style={{ ...styles.item }} {...props}>
                 <Text style={styles.itemText}>{title}</Text>
                 {isInSelectedQueue && (<View style={styles.selectedQueueItem} />)}
             </TouchableOpacity>
