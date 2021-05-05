@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, Animated, PanResponder } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, Animated, PanResponder, View, Dimensions } from 'react-native';
 import PropTypes from 'prop-types';
 import { Colors } from '../styles';
 
-export const AudioItem = ({ title, onSwipeRight, isSelected }) => {
+export const AudioItem = ({ title, onSwipeRight, isSelected, isInSelectedQueue, ...props }) => {
     const pan = useRef(new Animated.ValueXY()).current;
     const isPannable = useRef(true);
 
@@ -45,8 +45,9 @@ export const AudioItem = ({ title, onSwipeRight, isSelected }) => {
             style={{ transform: [{ translateX: pan.x }], ...(isSelected ? styles.selected : {}) }}
             {...panResponder.panHandlers}
         >
-            <TouchableOpacity style={{ ...styles.item }}>
+            <TouchableOpacity style={{ ...styles.item }} {...props}>
                 <Text style={styles.itemText}>{title}</Text>
+                {isInSelectedQueue && (<View style={styles.selectedQueueItem} />)}
             </TouchableOpacity>
         </Animated.View>
     );
@@ -55,6 +56,7 @@ export const AudioItem = ({ title, onSwipeRight, isSelected }) => {
 AudioItem.propTypes = {
     title: PropTypes.string.isRequired,
     onSwipeRight: PropTypes.func.isRequired,
+    isInSelectedQueue: PropTypes.bool.isRequired,
     isSelected: PropTypes.bool,
 };
 
@@ -65,14 +67,29 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
         borderRadius: 10,
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
+        flexDirection: 'row',
+        width: Dimensions.get('window').width - 50,
     },
     selected: {
         backgroundColor: Colors.selected,
+        borderRadius: 10,
+    },
+    selectedQueueItem: {
+        backgroundColor: Colors.orange,
+        height: 10,
+        width: 30,
+        bottom: 0,
+        right: 0,
+        borderBottomRightRadius: 10,
+        borderTopLeftRadius: 10,
     },
     itemText: {
         color: 'white',
         paddingHorizontal: 20,
+        maxWidth: Dimensions.get('window').width - 90,
+        maxHeight: 20,
+        overflow: 'hidden'
     },
 });

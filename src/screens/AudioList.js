@@ -11,6 +11,7 @@ import { Colors } from '../styles';
 
 export const AudioList = () => {
     const [songs, setSongs] = useState([]);
+    const [selectedQueue, setSelectedQueue] = useState({});
     const [isPlaying, setIsPlaying] = useState(false);
     const [hasAudioEnded, setHasAudioEnded] = useState(false);
     const [selectedSong, setSelectedSong] = useState(null);
@@ -22,6 +23,7 @@ export const AudioList = () => {
         DeviceEventEmitter.addListener(AudioManager.ON_AUDIO_RESUMED, handleAudioResumed);
         DeviceEventEmitter.addListener(AudioManager.ON_CHILDREN_UPDATED, handleChildrenUpdate);
         DeviceEventEmitter.addListener(AudioManager.ON_POSITION_CHANGED, handlePositionChanged);
+        DeviceEventEmitter.addListener(AudioManager.ON_SELECTED_QUEUE_CHANGED, handleSelectedQueueChanged);
 
         return () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_ENDED);
@@ -29,6 +31,7 @@ export const AudioList = () => {
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_AUDIO_RESUMED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_CHILDREN_UPDATED);
             DeviceEventEmitter.removeAllListeners(AudioManager.ON_POSITION_CHANGED);
+            DeviceEventEmitter.removeAllListeners(AudioManager.ON_SELECTED_QUEUE_CHANGED);
         }
     }, []);
 
@@ -45,6 +48,7 @@ export const AudioList = () => {
     const handleAudioResumed = () => setIsPlaying(true);
     const handleChildrenUpdate = setSongs;
     const handlePositionChanged = setSelectedSong;
+    const handleSelectedQueueChanged = setSelectedQueue;
 
     const handleAudioEnd = () => {
         setIsPlaying(false);
@@ -62,9 +66,10 @@ export const AudioList = () => {
 
     const init = async () => AudioManager.init();
 
-    const renderItem = ({ item: { title }, index }) => (
+    const renderItem = ({ item: { title, id }, index }) => (
         <AudioItem
             isSelected={index === selectedSong}
+            isInSelectedQueue={!!selectedQueue[id]}
             title={title}
             onSwipeRight={() => onItemSwipeRight(index)}
             onPress={() => playSong(index)}
@@ -74,7 +79,7 @@ export const AudioList = () => {
     return (
         <LinearGradient colors={[Colors.background, Colors.darkerBackground]} style={styles.container}>
             <SafeAreaView style={styles.container}>
-                <Text style={styles.title}>MUSIC</Text>
+                <Text style={styles.title}>ALL SONGS</Text>
                 <FlatList
                     style={styles.list}
                     data={songs}

@@ -74,14 +74,13 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             @Override
             public void onMetadataRetrieveError() {
                 Log.d(TAG, "MetadataUpdateListener onMetadataRetrieveError");
-                // Currently not handling errors, but should do it
             }
 
             @Override
             public void onQueueUpdated(String title, List<MediaSessionCompat.QueueItem> newQueue) {
                 Log.d(TAG, "MetadataUpdateListener onQueueUpdated");
-                mediaSession.setQueue(newQueue);
                 mediaSession.setQueueTitle(title);
+                mediaSession.setQueue(newQueue);
             }
 
             @Override
@@ -114,7 +113,7 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         setSessionToken(mediaSession.getSessionToken());
 
         Intent intent = new Intent(context, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT); // 99 is the request code
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 99, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         mediaSession.setSessionActivity(pendingIntent);
 
         playbackManager.updatePlaybackState();
@@ -135,8 +134,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
             } else MediaButtonReceiver.handleIntent(mediaSession, intent);
         }
 
-//        mDelayedStopHandler.removeCallbacksAndMessages(null);
-//        mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         return START_STICKY;
     }
 
@@ -145,17 +142,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
         Log.d(TAG, "MediaPlaybackService onGetRoot packageName " + clientPackageName);
         return new BrowserRoot(MY_MEDIA_ROOT_ID, null);
-        // (Optional) Control the level of access for the specified package name.
-        // You'll need to write your own logic to do this.
-//        if (allowBrowsing(clientPackageName, clientUid)) {
-//            // Returns a root ID that clients can use with onLoadChildren() to retrieve
-//            // the content hierarchy.
-//            return new BrowserRoot(MY_MEDIA_ROOT_ID, null);
-//        } else {
-//            // Clients can connect, but this BrowserRoot is an empty hierachy
-//            // so onLoadChildren returns nothing. This disables the ability to browse for content.
-//            return new BrowserRoot(MY_EMPTY_MEDIA_ROOT_ID, null);
-//        }
     }
 
     @Override
@@ -202,8 +188,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
 
     @Override
     public void onPlaybackStop() {
-        Log.d(TAG, "onPlaybackStop!");
-
         mediaSession.setActive(false);
 
         stopForeground(true);
@@ -229,7 +213,6 @@ public class MediaPlaybackService extends MediaBrowserServiceCompat implements P
         playbackManager.handleStopRequest();
         mediaNotificationManager.stopNotification();
 
-        // delayedStopHandler.removeCallbacksAndMessages(null);
         mediaSession.release();
     }
 }

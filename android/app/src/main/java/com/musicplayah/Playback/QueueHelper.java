@@ -16,7 +16,14 @@ public class QueueHelper {
         return -1;
     }
 
-    public static int count = 0;
+    public static boolean isItemAlreadyOnQueue(Iterable<MediaSessionCompat.QueueItem> queue, long queueId) {
+        for (MediaSessionCompat.QueueItem item : queue) {
+            if (queueId == item.getQueueId()) return true;
+        }
+        return false;
+    }
+
+    private static int count = 0;
 
     public static List<MediaSessionCompat.QueueItem> convertToQueue(Iterable<MediaMetadataCompat> tracks) {
         List<MediaSessionCompat.QueueItem> queue = new ArrayList<>();
