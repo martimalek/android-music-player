@@ -17,6 +17,8 @@
 <resources>
     <color name="white">#ffffff</color>
     <color name="light_grey">#f9f9f9</color>
+    <color name="background">#33383E</color>
+    <color name="darker_background">#17191C</color>
     <color name="bt_accent">#00B8D4</color>
     <color name="media_item_icon_playing">@color/bt_accent</color>
     <color name="media_item_icon_not_playing">#ccc</color>
