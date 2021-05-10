@@ -25,3 +25,9 @@ Some of the features intended:
 - [x] Alternative song queue with user-picked songs from the main queue
 - [ ] UI for the alternative queue
 - [ ] Retrieving songs from the cloud
+
+## Caveats
+
+### Android only
+
+This is an application built for myself, basically I'm (AFAIK) the only user of it, and I have an Android, so there's no reason to create an iOS version, even though React Native makes building multi-platform apps easier some work needs to be put for each platform. At the same time in order to build a product for **Apple** users you have to be an **Apple** user yourself, and I'm not (Android phone and Linux laptop).
